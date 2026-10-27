@@ -1,0 +1,23 @@
+TAPNOVA 4.0 — created by 1TapGod
+
+This distribution is a modified version of MSP2 MultiTool v3, based on
+MSP2TOOL Desktop / 6x0k Space by 6x0k.
+Original project: https://github.com/6x0k/MSP2TOOL-Desktop-x64
+
+Changes in this edition: TAPNOVA name, visual identity, original vector mark,
+desktop interface, Polish desktop messages, extension branding and default
+appearance, executable metadata, build packaging and documentation.
+The bundled extension retains its upstream game functionality.
+
+Version 3.1 adds a responsive panel presentation layer (panel-ui.js),
+navigation styling, orbital welcome artwork and section shortcuts.
+
+Version 4.0 adds the cross-platform Electron desktop shell, an editable Figma
+design, local Inter fonts, accessible keyboard routing and focus preservation
+for autograph search. Electron and Chromium license notices are included with
+their runtimes. Inter is licensed under the SIL Open Font License 1.1; its full
+license is bundled in desktop/generated/Inter-OFL.txt.
+
+The existing Apache License 2.0 is provided in LICENSE. Original notices
+and upstream documentation are retained in docs and Resources/Extension.
+MovieStarPlanet and MovieStarPlanet 2 names belong to their respective owners.

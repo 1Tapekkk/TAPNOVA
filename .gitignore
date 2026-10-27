@@ -1,0 +1,13 @@
+bin/
+obj/
+release/
+*.user
+*.suo
+node_modules/
+desktop/generated/
+test-results/
+.next/
+# Empty repository accidentally created inside the application folder.
+/TAPNOVA/
+# Website has its own Git repository and is not part of the desktop build.
+/sites/tapnova-web/

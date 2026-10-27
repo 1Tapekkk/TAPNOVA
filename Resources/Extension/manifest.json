@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "TAPNOVA",
+  "version": "4.0.0",
+  "description": "TAPNOVA — narzędzia do MovieStarPlanet 2. created by 1TapGod.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "debugger",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://moviestarplanet2.com/*",
+    "https://*.moviestarplanet2.com/*",
+    "https://*.mspapis.com/*",
+    "https://*.mspcdns.com/*"
+  ],
+  "action": {
+    "default_title": "TAPNOVA · created by 1TapGod"
+  },
+  "background": {
+    "service_worker": "bg.js"
+  },
+  "icons": {
+    "16": "icons/tapnova-16.png",
+    "32": "icons/tapnova-32.png",
+    "48": "icons/tapnova-48.png",
+    "128": "icons/tapnova-128.png"
+  }
+}

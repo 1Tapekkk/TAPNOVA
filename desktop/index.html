@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>TAPNOVA · Twoja przestrzeń</title>
+  <link rel="stylesheet" href="shell.css">
+  <script src="shell.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar" aria-label="Nawigacja główna">
+    <a class="brand" href="#start" data-page="home"><img src="generated/tapnova.svg" alt="" width="38" height="38"><span>TAPNOVA<small>created by 1TapGod</small></span></a>
+    <div class="nav-label">TWOJA PRZESTRZEŃ</div>
+    <nav>
+      <button class="nav-item" data-page="home" aria-current="page"><i data-icon="home"></i>Przegląd</button>
+      <button class="nav-item" data-game><i data-icon="play"></i>MovieStarPlanet 2<span class="nav-dot"></span></button>
+    </nav>
+    <div class="nav-label second-label">NARZĘDZIA</div>
+    <nav>
+      <button class="nav-item" data-tab="profile"><i data-icon="user"></i>Profil i styl</button>
+      <button class="nav-item" data-tab="bots"><i data-icon="star"></i>Autografy i boty</button>
+      <button class="nav-item" data-tab="auto"><i data-icon="bolt"></i>Aktywności</button>
+      <button class="nav-item" data-tab="homes"><i data-icon="grid"></i>Dom i przestrzeń</button>
+      <button class="nav-item" data-tab="chatroom"><i data-icon="chat"></i>Rozmowy</button>
+      <button class="nav-item" data-tab="spam"><i data-icon="shield"></i>Ochrona</button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="nav-item" data-page="help"><i data-icon="help"></i>Jak zacząć?</button>
+      <button class="nav-item" data-page="settings"><i data-icon="settings"></i>Ustawienia aplikacji</button>
+      <div class="edition"><span class="edition-mark">TN</span><span>DESKTOP EDITION<small>Wersja 4.0.0 <span id="platform"></span></small></span></div>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <div><span class="breadcrumb">Twoja przestrzeń <span>/</span></span> <strong id="page-title">Przegląd</strong></div>
+    <div class="topbar-actions"><span class="status-pill" id="connection"><span></span>Gotowe do gry</span><button class="icon-button" data-reload title="Odśwież grę" aria-label="Odśwież grę"><i data-icon="refresh"></i></button></div>
+  </header>
+
+  <main id="main">
+    <section class="page" id="page-home" aria-labelledby="welcome-title">
+      <div class="page-heading"><div><span class="eyebrow">DOBRZE CIĘ WIDZIEĆ</span><h1 id="welcome-title">Twoja gra. Twój rytm.</h1><p>Wszystko, czego potrzebujesz, w jednej przestrzeni.</p></div><span class="outline-tag">MSP2 TOOLKIT <span>✦</span></span></div>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy"><span class="eyebrow">MNIEJ KLIKANIA. WIĘCEJ TWOJEGO ŚWIATA.</span><h2 id="hero-title">Graj po<br><em>swojemu.</em></h2><p>Wejdź do gry, wybierz narzędzia i poczuj się u siebie.<br>Resztę masz pod ręką.</p><button class="button button-dark" data-game>Otwórz grę <i data-icon="arrow"></i></button><span class="hero-note">Zalogujesz się bezpośrednio w MSP2</span></div>
+        <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="spark spark-one">✦</span><img src="generated/tapnova.svg" alt=""><span class="spark spark-two">✦</span><span class="art-caption">MAKE IT YOURS.</span></div>
+      </section>
+      <div class="section-heading"><h2>Twój szybki dostęp</h2><span>Mały skrót do wielkich możliwości</span></div>
+      <div class="quick-grid">
+        <button class="quick-card" data-tab="bots"><span class="card-icon purple"><i data-icon="star"></i></span><span class="card-arrow">↗</span><strong>Autografy i boty</strong><span>Znajdź gracza po nicku<br>i wybierz swój autograf.</span><small>Otwórz narzędzia <span>→</span></small></button>
+        <button class="quick-card" data-tab="profile"><span class="card-icon peach"><i data-icon="user"></i></span><span class="card-arrow">↗</span><strong>Profil i styl</strong><span>Twoja postać, animacje<br>i detale, które robią różnicę.</span><small>Odkryj możliwości <span>→</span></small></button>
+        <button class="quick-card" data-tab="homes"><span class="card-icon mint"><i data-icon="grid"></i></span><span class="card-arrow">↗</span><strong>Dom i przestrzeń</strong><span>Wybierz miejsce, w którym<br>naprawdę jesteś sobą.</span><small>Zobacz domy <span>→</span></small></button>
+      </div>
+      <div class="onboarding"><span class="onboarding-icon"><i data-icon="help"></i></span><div><strong>Pierwszy raz w TAPNOVA?</strong><p>Otwórz grę i zaloguj się. Narzędzia rozpoznają Twoją sesję automatycznie.</p></div><button class="text-button" data-page="help">Krótki przewodnik <span>→</span></button></div>
+    </section>
+
+    <section class="page reading-page" id="page-help" hidden aria-labelledby="help-title">
+      <span class="eyebrow">ZACZNIJ W SWOIM TEMPIE</span><h1 id="help-title">Trzy kroki. I jesteś u siebie.</h1><p class="lead">TAPNOVA otwiera grę i porządkuje narzędzia w jednym oknie.</p>
+      <ol class="steps"><li><strong>Otwórz MovieStarPlanet 2</strong><p>Kliknij „Otwórz grę”. Zaloguj się w formularzu gry. Aplikacja nie wymaga osobnego konta TAPNOVA.</p></li><li><strong>Wybierz narzędzie z menu</strong><p>Profil, domy, autografy i pozostałe funkcje są dostępne w panelu. Niektóre pojawią się dopiero po zalogowaniu.</p></li><li><strong>Wpisz nick i wybierz gracza</strong><p>W sekcji „Autografy i boty” otwórz panel autografu, wpisz nick i naciśnij Enter lub przycisk wyszukiwania. Wybierz gracza z wyników przed wysłaniem.</p></li></ol>
+      <div class="note"><strong>Masz kontrolę.</strong> Przycisk STOP w panelu zatrzymuje aktywne zadania. W polach działają Tab, Enter, zaznaczanie i wklejanie: Ctrl+V na Windows lub ⌘V na Macu.</div>
+      <button class="button button-primary" data-game>Otwórz grę <i data-icon="arrow"></i></button>
+    </section>
+
+    <section class="page reading-page" id="page-settings" hidden aria-labelledby="settings-title">
+      <span class="eyebrow">PO TWOJEMU</span><h1 id="settings-title">Ustawienia aplikacji</h1><p class="lead">Wygląd i sesja w jednym miejscu.</p>
+      <div class="setting-card"><div><h2>Wygląd panelu i zestawy</h2><p>Kolory, dźwięki, rozmiar i zapisane konfiguracje narzędzi.</p></div><button class="button button-secondary" data-tab="settings">Otwórz ustawienia <span>↗</span></button></div>
+      <div class="setting-card"><div><h2>Dane gry na tym urządzeniu</h2><p>Usunięcie ciasteczek i ustawień wyloguje Cię z MSP2.<br>Wymaga potwierdzenia.</p></div><button class="button button-danger" id="clear-data">Wyczyść dane</button></div>
+      <div class="note"><strong>TAPNOVA 4.0.0 · created by 1TapGod</strong><br>Wydanie na Windows i macOS. Nowa aplikacja ma osobną sesję — przy pierwszym uruchomieniu zaloguj się ponownie.</div>
+    </section>
+  </main>
+  <footer class="statusbar"><span id="status-text" role="status" aria-live="polite">Gotowe do gry</span><span>Twoja przestrzeń. Twój styl. <b>TAPNOVA</b></span></footer>
+</body>
+</html>

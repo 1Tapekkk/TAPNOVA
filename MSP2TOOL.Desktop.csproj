@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>TAPNOVA</AssemblyName>
+    <RootNamespace>TapNova.Desktop</RootNamespace>
+    <Product>TAPNOVA</Product>
+    <Title>TAPNOVA · created by 1TapGod</Title>
+    <Authors>1TapGod</Authors>
+    <Company>1TapGod</Company>
+    <Description>TAPNOVA — MSP2 desktop toolkit. created by 1TapGod.</Description>
+    <Version>3.3.0</Version>
+    <ApplicationIcon>Resources\Brand\tapnova.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Brand\tapnova.ico" />
+    <Content Include="Resources\Extension\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="LICENSE;NOTICE;README.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="docs\*.md;Resources\Brand\*.png;Resources\Brand\*.svg" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

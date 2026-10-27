@@ -1,0 +1,80 @@
+{
+  "name": "tapnova-desktop",
+  "version": "4.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.25.0",
+  "description": "TAPNOVA — Twoja przestrzeń do gry. Windows & macOS.",
+  "author": "1TapGod",
+  "license": "SEE LICENSE IN LICENSE",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "prepare:desktop": "node scripts/Prepare-Desktop.cjs",
+    "start": "node scripts/Prepare-Desktop.cjs && electron .",
+    "test": "node scripts/Check-Control-Core.cjs && node scripts/Check-Keyboard.cjs && node scripts/Check-Panel.cjs && node scripts/Check-Panel-Layout.cjs && node scripts/Check-Localization.cjs && node scripts/Check-Control-Center.cjs && node scripts/Check-Desktop.cjs",
+    "dist:win": "node scripts/Prepare-Desktop.cjs && electron-builder --win nsis --x64 --publish never",
+    "dist:mac": "node scripts/Prepare-Desktop.cjs && electron-builder --mac dmg zip --x64 --arm64 --publish never",
+    "pack": "node scripts/Prepare-Desktop.cjs && electron-builder --dir --publish never"
+  },
+  "devDependencies": {
+    "@fontsource/inter": "5.3.0",
+    "electron": "45.0.0",
+    "electron-builder": "26.18.0",
+    "playwright": "1.64.1"
+  },
+  "build": {
+    "appId": "com.1tapgod.tapnova",
+    "productName": "TAPNOVA",
+    "asar": true,
+    "directories": {
+      "output": "release/desktop",
+      "buildResources": "Resources/Brand"
+    },
+    "files": [
+      "desktop/**/*",
+      "package.json",
+      "LICENSE",
+      "NOTICE"
+    ],
+    "extraResources": [
+      {
+        "from": "Resources/Extension",
+        "to": "extension",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "docs/DESKTOP-PL.md",
+        "to": "INSTRUKCJA.md"
+      }
+    ],
+    "artifactName": "TAPNOVA-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "icon": "Resources/Brand/tapnova.ico",
+      "target": [
+        "nsis"
+      ],
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "TAPNOVA 4"
+    },
+    "mac": {
+      "icon": "Resources/Brand/tapnova.png",
+      "category": "public.app-category.games",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "hardenedRuntime": true,
+      "identity": null
+    },
+    "dmg": {
+      "title": "TAPNOVA"
+    }
+  }
+}

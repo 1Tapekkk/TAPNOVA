@@ -1,0 +1,93 @@
+<Window x:Class="TapNova.Desktop.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="TAPNOVA · created by 1TapGod" Icon="Resources/Brand/tapnova.ico"
+ Width="1440" Height="900" MinWidth="1000" MinHeight="650"
+ FontFamily="Segoe UI" UseLayoutRounding="True"
+ Background="{DynamicResource WindowBg}" WindowStartupLocation="CenterScreen">
+ <Grid>
+  <Grid.ColumnDefinitions><ColumnDefinition Width="76"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+  <Border Background="{StaticResource PanelBg}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+   <Grid Margin="12,20">
+    <Image Source="{StaticResource BrandMark}" Width="44" Height="44" VerticalAlignment="Top"/>
+    <StackPanel VerticalAlignment="Center">
+     <Button Click="OpenGame_Click" Content="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,0,10" Height="46" Padding="0" Style="{StaticResource AccentButton}" ToolTip="Otwórz MSP2" AutomationProperties.Name="Otwórz MSP2"/>
+     <Button Click="Refresh_Click" Content="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0,0,0,10" Height="46" Padding="0" ToolTip="Odśwież" AutomationProperties.Name="Odśwież"/>
+     <Button Click="ClearData_Click" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="18" Margin="0" Height="46" Padding="0" ToolTip="Wyczyść dane przeglądarki" AutomationProperties.Name="Wyczyść dane"/>
+    </StackPanel>
+    <TextBlock Text="TN / 32" FontFamily="Consolas" FontSize="10" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Bottom"/>
+   </Grid>
+  </Border>
+  <Grid Grid.Column="1">
+   <Grid.RowDefinitions><RowDefinition Height="88"/><RowDefinition Height="56"/><RowDefinition Height="*"/><RowDefinition Height="36"/></Grid.RowDefinitions>
+   <Grid Margin="28,0">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel VerticalAlignment="Center">
+     <TextBlock Text="TAPNOVA" FontWeight="ExtraBold" FontSize="27"/>
+     <TextBlock Text="TWOJA PRZESTRZEŃ DO GRY" Foreground="{StaticResource MutedBrush}" FontSize="10" Margin="1,3,0,0"/>
+    </StackPanel>
+    <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+     <Border BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="5" Padding="10,5" Margin="0,0,16,0"><TextBlock Text="MSP2 / STUDIO 3.2" Foreground="{StaticResource MutedBrush}" FontFamily="Consolas" FontSize="10"/></Border>
+     <TextBlock Text="created by 1TapGod" Foreground="{StaticResource AccentBrush}" FontSize="12" VerticalAlignment="Center"/>
+    </StackPanel>
+   </Grid>
+   <Grid Grid.Row="1" Margin="28,0,28,14">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <StackPanel Orientation="Horizontal">
+     <Button Click="Back_Click" ToolTip="Wstecz" AutomationProperties.Name="Wstecz" Width="36" Padding="0" Content="←" FontSize="18"/>
+     <Button Click="Forward_Click" ToolTip="Dalej" AutomationProperties.Name="Dalej" Width="36" Padding="0" Content="→" FontSize="18"/>
+    </StackPanel>
+    <TextBox Grid.Column="1" x:Name="AddressBox" Margin="4,0,10,0" FontSize="12" AutomationProperties.Name="Adres strony" Text="https://moviestarplanet2.com/" KeyDown="AddressBox_KeyDown"/>
+    <Button Grid.Column="2" Click="Go_Click" Content="Przejdź ↗" Margin="0" Padding="18,8"/>
+   </Grid>
+   <Border Grid.Row="2" Margin="28,0,28,8" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="10" Background="{StaticResource PanelBg}">
+    <Grid Margin="1">
+     <wv2:WebView2 x:Name="Browser" Visibility="Hidden" xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"/>
+     <Border x:Name="StartupOverlay" Background="#19191F" CornerRadius="9" Visibility="Visible">
+      <Grid Margin="32">
+       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+       <Grid>
+        <TextBlock Text="01 — START" Foreground="{StaticResource AccentBrush}" FontFamily="Consolas" FontSize="11"/>
+        <TextBlock Text="MAKE IT YOURS." Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Right" FontSize="10"/>
+       </Grid>
+       <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,24">
+        <Grid.ColumnDefinitions><ColumnDefinition Width="3*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions>
+        <StackPanel VerticalAlignment="Center">
+         <TextBlock Text="Graj po" FontSize="64" FontWeight="ExtraBold"/>
+         <TextBlock Text="swojemu." FontSize="64" FontWeight="ExtraBold" Foreground="{StaticResource AccentBrush}" Margin="0,-12,0,0"/>
+         <TextBlock Text="Twój profil. Twoje miejsca. Twoje zasady." FontSize="15" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="3,20,24,0"/>
+         <Border Background="#29232F" CornerRadius="4" Padding="12,7" HorizontalAlignment="Left" Margin="3,22,0,0">
+          <TextBlock Text="TAPNOVA / 1TapGod" Foreground="#E9AD96" FontFamily="Consolas" FontSize="11"/>
+         </Border>
+        </StackPanel>
+        <Viewbox Grid.Column="1" MaxWidth="300" Margin="16" VerticalAlignment="Center">
+         <Grid Width="280" Height="300">
+          <Border Background="#24212C" CornerRadius="36" Width="220" Height="220" RenderTransformOrigin="0.5,0.5"><Border.RenderTransform><RotateTransform Angle="12"/></Border.RenderTransform></Border>
+          <Image Source="{StaticResource BrandMark}" Width="220" Height="220" RenderTransformOrigin="0.5,0.5"><Image.RenderTransform><RotateTransform Angle="-8"/></Image.RenderTransform></Image>
+          <Border Background="#E9AD96" CornerRadius="16" Width="32" Height="32" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,18,10,0"><TextBlock Text="✦" Foreground="#211B32" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+         </Grid>
+        </Viewbox>
+       </Grid>
+       <Border Grid.Row="2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+        <Grid>
+         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+         <StackPanel>
+          <TextBlock x:Name="StartupStatus" Text="Przygotowujemy Twoją przestrzeń…" Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap"/>
+          <ProgressBar x:Name="StartupProgress" IsIndeterminate="True" Height="3" Width="220" BorderThickness="0" Foreground="{StaticResource AccentBrush}" Background="#34313C" HorizontalAlignment="Left" Margin="0,12,0,0"/>
+          <Button x:Name="RetryButton" Content="Spróbuj ponownie" Click="Retry_Click" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,12,0,0" Style="{StaticResource AccentButton}"/>
+         </StackPanel>
+         <TextBlock Grid.Column="1" Text="LET’S PLAY ↗" Foreground="{StaticResource MutedBrush}" FontSize="10" VerticalAlignment="Center" Margin="18,0,0,0"/>
+        </Grid>
+       </Border>
+      </Grid>
+     </Border>
+    </Grid>
+   </Border>
+   <Grid Grid.Row="3" Margin="28,0">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock x:Name="StatusText" Text="Uruchamianie TAPNOVA…" TextTrimming="CharacterEllipsis" Margin="0,0,20,0" Foreground="{StaticResource MutedBrush}" FontSize="10" VerticalAlignment="Center"/>
+    <TextBlock Grid.Column="1" Text="TAPNOVA STUDIO  /  3.2" Foreground="{StaticResource MutedBrush}" FontFamily="Consolas" FontSize="10" VerticalAlignment="Center"/>
+   </Grid>
+  </Grid>
+ </Grid>
+</Window>

@@ -64,7 +64,7 @@
       "shortcutName": "TAPNOVA 4"
     },
     "mac": {
-      "icon": "Resources/Brand/tapnova.png",
+      "icon": "Resources/Brand/tapnova.svg",
       "category": "public.app-category.games",
       "target": [
         "dmg",

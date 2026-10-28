@@ -11,6 +11,8 @@ const PACK = {
   locale: 'locales-pl.js',
   controls: 'control-core.js',
   center: 'control-center.js',
+  comments: 'status-comments.js',
+  extras: 'workspace-tools.js',
   ui: 'panel-ui.js',
   app: 'app.js',
   boot: 'boot.js',
@@ -24,7 +26,7 @@ const ID_ISO = 'cs-iso';
 const ID_MAIN = 'cs-main';
 const ID_SEED = 'cs-s0';
 
-let MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.ui, PACK.app];
+let MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.extras, PACK.comments, PACK.ui, PACK.app];
 let ISO_FILES = [PACK.boot];
 let SEED_FILES = [PACK.seed];
 let _layoutReady = null;
@@ -35,13 +37,13 @@ async function resolvePackLayout() {
     try {
       const r = await fetch(chrome.runtime.getURL(PACK.app));
       if (r.ok) {
-        MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.ui, PACK.app];
+        MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.extras, PACK.comments, PACK.ui, PACK.app];
         ISO_FILES = [PACK.boot];
         SEED_FILES = [PACK.seed];
         return 'flat';
       }
     } catch {}
-    MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.ui, PACK.app].map(file => `dist/${file}`);
+    MAIN_FILES = [PACK.locale, PACK.controls, PACK.center, PACK.extras, PACK.comments, PACK.ui, PACK.app].map(file => `dist/${file}`);
     ISO_FILES = [`dist/${PACK.boot}`];
     SEED_FILES = [`dist/${PACK.seed}`];
     return 'dist';

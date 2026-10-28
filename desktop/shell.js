@@ -1,5 +1,6 @@
 'use strict';
 const paths = {
+  camera:'<path d="M3 7h4l2-3h6l2 3h4v13H3z"/><circle cx="12" cy="13" r="4"/>',
   home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
   play:'<path d="m8 5 11 7-11 7z"/>',
   user:'<circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
@@ -49,6 +50,7 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
   button.disabled=true; const result=await command('tab',button.dataset.tab); button.disabled=false;
   if(result?.ok) { const nav=document.querySelector(`.nav-item[data-tab="${button.dataset.tab}"]`); current(nav,nav?.textContent||'Narzędzia'); }
 }));
+document.querySelector('[data-photo]').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('photo')}finally{button.disabled=false}});
 document.querySelector('[data-reload]').addEventListener('click',()=>command('reload'));
 document.querySelector('#clear-data').addEventListener('click',()=>command('clear-data'));
 api?.onStatus(displayStatus);

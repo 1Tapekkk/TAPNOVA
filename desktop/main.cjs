@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { GAME_URL, isGameURL, tabs } = require('./policy.cjs');
+const takePhoto = require('./photo.cjs').createPhotographer();
 const smoke = process.argv.includes('--smoke-test');
 const resources = app.isPackaged ? path.join(process.resourcesPath,'extension') : path.join(__dirname,'../Resources/Extension');
 const shellURL = pathToFileURL(path.join(__dirname,'index.html')).href;
@@ -45,6 +46,21 @@ async function startGame() {
     finally { busy = false; }
   }
   if (loaded) showGame(true);
+}
+async function photograph() {
+  if (!loaded || !visible || !game || game.webContents.isDestroyed()) {
+    status('idle','Najpierw otwórz grę.');return {ok:false};
+  }
+  const wc=game.webContents;
+  try {
+    const result=await takePhoto({webContents:wc,valid:()=>visible&&game?.webContents===wc,
+      countdown:n=>status('ready',`Zdjęcie za ${n}… Panel TAPNOVA zostanie ukryty.`),
+      chooseFile:()=>dialog.showSaveDialog(win,{title:'Zapisz zdjęcie gry',defaultPath:path.join(app.getPath('pictures'),'TAPNOVA-'+new Date().toISOString().replace(/[:.]/g,'-')+'.png'),filters:[{name:'Obraz PNG',extensions:['png']}]}),
+      writeFile:(file,bytes)=>fs.writeFile(file,bytes)
+    });
+    if(!result.busy)status('ready',result.ok?'Zdjęcie zapisane.': 'Anulowano zapis zdjęcia.');
+    return result;
+  } catch { status('error','Nie udało się zapisać zdjęcia. Panel został przywrócony.');return {ok:false}; }
 }
 async function pack(name) {
   if (!['d1','d2','d3'].includes(name)) throw Error('Unknown data pack');
@@ -110,7 +126,7 @@ async function createWindow() {
   await game.webContents.loadURL('about:blank');
   game.webContents.debugger.attach('1.3');
   await game.webContents.debugger.sendCommand('Page.enable');
-  const sources = await Promise.all(['locales-pl.js','control-core.js','control-center.js','panel-ui.js','app.js'].map(f=>fs.readFile(path.join(resources,f),'utf8')));
+  const sources = await Promise.all(['locales-pl.js','control-core.js','control-center.js','workspace-tools.js','status-comments.js','panel-ui.js','app.js'].map(f=>fs.readFile(path.join(resources,f),'utf8')));
   const source = `if(location.protocol==='https:'&&(location.hostname==='moviestarplanet2.com'||location.hostname.endsWith('.moviestarplanet2.com'))){\n${sources.join('\n;\n')}\n}`;
   await game.webContents.debugger.sendCommand('Page.addScriptToEvaluateOnNewDocument',{source});
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
@@ -120,7 +136,7 @@ async function createWindow() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform==='darwin'?[{role:'appMenu'}]:[]),
     {label:'Edycja',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
-    {label:'Widok',submenu:[{role:'togglefullscreen'},{role:'minimize'}]}
+    {label:'Widok',submenu:[{label:'Zrób zdjęcie gry',accelerator:'CmdOrCtrl+Shift+S',click:photograph},{type:'separator'},{role:'togglefullscreen'},{role:'minimize'}]}
   ]));
   await win.loadFile(path.join(__dirname,'index.html'));
   if (!smoke) win.show();
@@ -132,6 +148,7 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
     case 'status': return lastStatus;
+    case 'photo': return photograph();
     case 'home': showGame(false); return {ok:true};
     case 'game': await startGame(); return {ok:loaded};
     case 'reload':

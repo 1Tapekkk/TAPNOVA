@@ -1,17 +1,29 @@
 # TAPNOVA
 **created by 1TapGod**
 
-## Nowe wydanie 4.0 — Windows i macOS
+## Wydanie 4.1 — Windows i macOS
 
-Nowa aplikacja w `desktop/` ma profesjonalny interfejs z bocznym menu, lokalnymi fontami Inter, ekranem startowym, przewodnikiem i ustawieniami. Wspólny panel ma większe pola oraz naprawioną obsługę klawiatury: wpisywanie nicku, wklejanie, polskie znaki, Enter i Tab działają niezależnie od obsługi klawiatury w grze.
+[Pobierz gotową aplikację z Releases](https://github.com/1Tapekkk/TAPNOVA/releases/latest). Pliki pojawiają się po zakończeniu testów i budowania wszystkich systemów w GitHub Actions.
 
-- Windows: instalator `release/desktop/TAPNOVA-4.0.0-win-x64.exe`. `START_TAPNOVA.bat` wybiera nową aplikację, jeśli została zbudowana.
-- macOS: paczki ZIP dla Apple Silicon (`arm64`) i Intela (`x64`). Natywne DMG można zbudować na Macu przez `pnpm dist:mac` lub workflow `.github/workflows/desktop.yml`.
-- [Projekt w Figmie](https://www.figma.com/design/4rK0z1zkwGDv91K1z9ldCN) · [Instrukcja instalacji, budowania i ograniczenia weryfikacji](docs/DESKTOP-PL.md).
+| Komputer | Plik do pobrania |
+| --- | --- |
+| Windows 10/11 (64-bit) | TAPNOVA-4.1.0-win-x64.exe |
+| Mac Apple Silicon (M1 i nowsze), macOS 13+ | TAPNOVA-4.1.0-mac-arm64.dmg |
+| Mac Intel, macOS 13+ | TAPNOVA-4.1.0-mac-x64.dmg |
 
-Paczki lokalne nie mają podpisu wydawcy. macOS wymaga weryfikacji na prawdziwym Macu; testy funkcji gry korzystają wyłącznie ze sztucznej sesji. Nowy profil jest oddzielny od starego — zaloguj się ponownie.
+Na Windows uruchom instalator. Na Macu otwórz DMG i przeciągnij TAPNOVA do Applications. ZIP jest alternatywą dla DMG. Do używania programu nie potrzebujesz Node.js, GitHuba ani plików „Source code”.
 
-Programiści: `pnpm install --frozen-lockfile`, `node node_modules/electron/install.js`, `pnpm start`. Testy: `pnpm prepare:desktop`, `pnpm exec playwright install chromium`, `pnpm test`. Instalator Windows: `pnpm dist:win`.
+Nowości: **komentarze statusu**, wyszukiwarka narzędzi i ulubione, lokalne archiwum komentarzy, dziennik zadań oraz zdjęcia gry z ukrytym panelem TAPNOVA. [Lista zmian](docs/releases/4.1.0.md) · [Instrukcja](docs/DESKTOP-PL.md).
+
+Paczki nie mają certyfikatu wydawcy. Mac używa podpisu ad-hoc, bez notaryzacji Apple, więc system może zablokować pierwsze uruchomienie. Instrukcja opisuje instalację i ograniczenia. Testy gry używają symulowanej sesji.
+
+### Wydanie na GitHubie
+
+Wyślij commit na gałąź **main** (w GitHub Desktop: **Push origin**). Workflow **TAPNOVA desktop packages** przetestuje aplikację i gotowe paczki na Windows, Macu Intel i Apple Silicon. Dopiero po sukcesie wszystkich trzech zadań opublikuje wersję z package.json, instalatory, instrukcję i sumy SHA-256 w Releases. Ręczne uruchomienie: Actions → TAPNOVA desktop packages → Run workflow.
+
+Kolejne wydanie wymaga zwiększenia wersji w package.json i dodania odpowiadającego jej pliku docs/releases/WERSJA.md. Opublikowane wydanie nie jest nadpisywane.
+
+Programiści: pnpm install --frozen-lockfile, node node_modules/electron/install.js, pnpm start. Testy: pnpm prepare:desktop, pnpm exec playwright install chromium, pnpm test.
 
 Poniżej zachowano opis starszego wydania WPF i jego skryptów .NET.
 

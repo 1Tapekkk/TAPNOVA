@@ -9,6 +9,11 @@ desktop interface, Polish desktop messages, extension branding and default
 appearance, executable metadata, build packaging and documentation.
 The bundled extension retains its upstream game functionality.
 
+Additional original TAPNOVA modules provide status-comment moderation,
+local comment archives, a command search, pinned shortcuts, a local task journal,
+and desktop game screenshots. API protocol references are documented in
+docs/STATUS-COMMENTS-API.md.
+
 Version 3.1 adds a responsive panel presentation layer (panel-ui.js),
 navigation styling, orbital welcome artwork and section shortcuts.
 

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const files = ['locales-pl.js', 'control-core.js', 'control-center.js', 'panel-ui.js', 'app.js'];
+const files = ['locales-pl.js', 'control-core.js', 'control-center.js', 'workspace-tools.js', 'status-comments.js', 'panel-ui.js', 'app.js'];
 
 (async () => {
   const browser = await chromium.launch({ headless: true });

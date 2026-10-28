@@ -95,7 +95,10 @@
       async run(name, action) {
         if (paused) throw aborted();
         const job = { name }; jobs.add(job);
-        try { return await action(); } finally { jobs.delete(job); }
+        const history = window.__tapnovaExtras?.begin(name);
+        try { const result=await action(); history?.finish(paused?'stopped':'finished'); return result; }
+        catch(error) { history?.finish(error?.name==='AbortError'?'stopped':'failed'); throw error; }
+        finally { jobs.delete(job); }
       },
       async request(url, options = {}) {
         if (paused) throw aborted();

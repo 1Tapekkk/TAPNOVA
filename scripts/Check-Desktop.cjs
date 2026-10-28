@@ -43,7 +43,7 @@ const root = path.resolve(__dirname,'..');
     await page.screenshot({path:path.join(root,'test-results/desktop-compact.png')});
     // Intercept HTTPS at the Chromium protocol layer: every request is fulfilled
     // locally, including the real game's origin. No account/session is used.
-    const integration=await application.evaluate(async({webContents,BrowserWindow})=>{
+    const integration=await application.evaluate(async({webContents,BrowserWindow,app})=>{
       const shell=BrowserWindow.getAllWindows()[0].webContents;
       const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
       if(!wc)throw Error('Game WebContents missing');
@@ -54,15 +54,25 @@ const root = path.resolve(__dirname,'..');
         return new Response('',{status:404});
       });
       await wc.loadURL('https://moviestarplanet2.com/');
-      const result=await wc.executeJavaScript(`new Promise(resolve=>{let tries=0;const check=()=>{if(window.__xbMountPanel&&window.__tapnovaUI){window.__xbPlayAt=Date.now();window.__xbMountPanel();resolve({panel:!!window.__xbPanel,require:typeof require,bridge:typeof window.tapnova,game:location.hostname})}else if(++tries<100)setTimeout(check,50);else resolve({error:'document-start injection did not mount'})};check()})`);
+      const result=await wc.executeJavaScript(`new Promise(resolve=>{let tries=0;const check=()=>{if(window.__xbMountPanel&&window.__tapnovaUI){window.__xbPlayAt=Date.now();window.__xbMountPanel();resolve({panel:!!window.__xbPanel,comments:typeof window.__tapnovaComments,require:typeof require,bridge:typeof window.tapnova,game:location.hostname})}else if(++tries<100)setTimeout(check,50);else resolve({error:'document-start injection did not mount'})};check()})`);
       const packs=await wc.executeJavaScript(`new Promise(resolve=>{const id='desktop-test';let timer=setTimeout(()=>resolve({error:'pack bridge timeout'}),10000);window.addEventListener('message',function handler(e){if(e.data?.__xbPack===1&&e.data.dir==='res'&&e.data.reqId===id){clearTimeout(timer);window.removeEventListener('message',handler);resolve({ok:e.data.ok,hasPack:!!e.data.emojis})}});window.postMessage({__xbPack:1,dir:'req',reqId:id},location.origin)})`);
       const child=wc.mainFrame.frames.find(frame=>frame.url.endsWith('/fixture-frame'));
       const childInjected=child?await child.executeJavaScript('typeof window.__tapnovaUI'):null;
       await wc.loadURL('https://moviestarplanet2.com/reload');
       const reloaded=await wc.executeJavaScript('typeof window.__tapnovaUI');
-      return {result,packs,reloaded,childInjected,preferences:wc.getLastWebPreferences()};
+      const photoModule=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/package.json')('./desktop/photo.cjs');
+      const main=BrowserWindow.getAllWindows()[0];
+      main.showInactive();
+      await main.webContents.executeJavaScript('window.__xbPanel=document.createElement("div");window.__xbPanel.textContent="Photo fixture panel";document.body.append(window.__xbPanel)');
+      let capturedBytes=0;
+      const photo=await photoModule.createPhotographer({wait:async()=>{}})({webContents:main.webContents,
+        chooseFile:async()=>({filePath:'offline.png'}),writeFile:async(_file,bytes)=>{capturedBytes=bytes.length}});
+      const restored=await main.webContents.executeJavaScript('getComputedStyle(window.__xbPanel).visibility');
+      return {result,packs,reloaded,childInjected,photo,capturedBytes,restored,preferences:wc.getLastWebPreferences()};
     });
     assert.equal(integration.result.panel,true,JSON.stringify(integration));
+    assert.equal(integration.photo.ok,true);assert.ok(integration.capturedBytes>100);assert.equal(integration.restored,'visible');
+    assert.equal(integration.result.comments,'object','Status comments module is injected');
     assert.equal(integration.result.require,'undefined');assert.equal(integration.result.bridge,'undefined');
     assert.deepEqual(integration.packs,{ok:true,hasPack:true});
     assert.equal(integration.reloaded,'object');

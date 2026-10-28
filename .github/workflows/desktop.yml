@@ -1,40 +1,87 @@
 name: TAPNOVA desktop packages
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to GitHub Releases after all builds pass
+        type: boolean
+        default: true
 permissions:
   contents: read
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   desktop:
+    name: Build and test ${{ matrix.target }}-${{ matrix.arch }}
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
             target: win
-          - os: macos-latest
+            arch: x64
+          - os: macos-15-intel
             target: mac
+            arch: x64
+          - os: macos-15
+            target: mac
+            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - uses: pnpm/action-setup@v4
-        with:
-          version: '11.25.0'
+      - run: npm install --global pnpm@11.25.0
       - run: pnpm install --frozen-lockfile
       - run: node node_modules/electron/install.js
       - run: pnpm exec playwright install chromium
       - run: pnpm prepare:desktop
-      - run: pnpm test
-      - run: pnpm dist:${{ matrix.target }}
+      - name: Test application and tools
+        run: pnpm test
+      - name: Build native package
+        run: pnpm exec electron-builder --${{ matrix.target }} --${{ matrix.arch }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      - uses: actions/upload-artifact@v4
+      - name: Verify resources and launch packaged application
+        run: node scripts/Check-Package.cjs
+      - uses: actions/upload-artifact@v6
         with:
-          name: TAPNOVA-${{ matrix.target }}
+          name: TAPNOVA-${{ matrix.target }}-${{ matrix.arch }}
           path: |
             release/desktop/*.exe
             release/desktop/*.dmg
             release/desktop/*.zip
           if-no-files-found: error
+          compression-level: 0
+  release:
+    name: Publish complete release
+    needs: desktop
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: TAPNOVA-*
+          merge-multiple: true
+          path: release/publish
+      - name: Publish installers, instructions and checksums
+        run: node scripts/Publish-Release.cjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

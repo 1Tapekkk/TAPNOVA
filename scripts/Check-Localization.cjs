@@ -16,8 +16,8 @@ const root = path.resolve(__dirname, '..');
       const url = new URL(route.request().url());
       if (url.origin !== 'https://tapnova-preview.invalid') return route.abort();
       if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body:
-        '<!doctype html><meta charset="utf-8"><script src="/locales-pl.js"></script><script src="/control-core.js"></script><script src="/control-center.js"></script><script src="/panel-ui.js"></script><script src="/app.js"></script>' });
-      if (!['/locales-pl.js', '/control-core.js', '/control-center.js', '/panel-ui.js', '/app.js'].includes(url.pathname)) return route.abort();
+        '<!doctype html><meta charset="utf-8"><script src="/locales-pl.js"></script><script src="/control-core.js"></script><script src="/control-center.js"></script><script src="/workspace-tools.js"></script><script src="/status-comments.js"></script><script src="/panel-ui.js"></script><script src="/app.js"></script>' });
+      if (!['/locales-pl.js', '/control-core.js', '/control-center.js', '/workspace-tools.js', '/status-comments.js', '/panel-ui.js', '/app.js'].includes(url.pathname)) return route.abort();
       let body = fs.readFileSync(path.join(root, 'Resources/Extension', url.pathname.slice(1)), 'utf8');
       if (url.pathname === '/app.js') {
         // Instrument only this in-memory copy, never the distributed extension.

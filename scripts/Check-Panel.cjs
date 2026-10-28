@@ -15,12 +15,12 @@ const root = path.resolve(__dirname, '..');
       const url = route.request().url();
       if (url === 'https://tapnova-preview.invalid/') return route.fulfill({
         contentType: 'text/html',
-        body: '<!doctype html><html lang="pl"><meta charset="utf-8"><body style="background:#090c15"><script src="/locales-pl.js"></script><script src="/control-core.js"></script><script src="/control-center.js"></script><script src="/panel-ui.js"></script><script src="/app.js"></script></body></html>'
+        body: '<!doctype html><html lang="pl"><meta charset="utf-8"><body style="background:#090c15"><script src="/locales-pl.js"></script><script src="/control-core.js"></script><script src="/control-center.js"></script><script src="/workspace-tools.js"></script><script src="/status-comments.js"></script><script src="/panel-ui.js"></script><script src="/app.js"></script></body></html>'
       });
       if (url === 'https://tapnova-preview.invalid/locales-pl.js') return route.fulfill({
         contentType: 'text/javascript', body: fs.readFileSync(path.join(root, 'Resources/Extension/locales-pl.js'), 'utf8')
       });
-      if (['/control-core.js','/control-center.js'].includes(new URL(url).pathname)) return route.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(root,'Resources/Extension',new URL(url).pathname.slice(1)),'utf8')});
+      if (['/control-core.js','/control-center.js','/workspace-tools.js','/status-comments.js'].includes(new URL(url).pathname)) return route.fulfill({contentType:'text/javascript',body:fs.readFileSync(path.join(root,'Resources/Extension',new URL(url).pathname.slice(1)),'utf8')});
       if (url === 'https://tapnova-preview.invalid/app.js') return route.fulfill({
         contentType: 'text/javascript', body: fs.readFileSync(path.join(root, 'Resources/Extension/app.js'), 'utf8')
       });

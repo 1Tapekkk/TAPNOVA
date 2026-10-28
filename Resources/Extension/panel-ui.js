@@ -310,6 +310,7 @@
     footer.append(session, signature); panel.append(footer);
     instances.set(panel, { context, tabs, session, labels, sectionHead, sectionKicker, sectionTitle, sectionDescription });
     window.__tapnovaCenter?.mount(panel, context);
+    window.__tapnovaExtras?.mount(panel, context);
     sync(panel);
   }
   function sync(panel) {
@@ -335,6 +336,8 @@
     }
     session.textContent = authenticated ? context.text.ready : context.text.waiting;
     window.__tapnovaCenter?.sync();
+    window.__tapnovaComments?.sync();
+    window.__tapnovaExtras?.sync();
   }
   window.__tapnovaUI = { mount, sync };
 })();

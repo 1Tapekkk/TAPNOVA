@@ -8,7 +8,7 @@ Wydanie testowe z adresem `http://127.0.0.1:8787` działa tylko z serwerem uruch
 
 ## Pierwszy test lokalny — właściciel
 
-1. Zainstaluj Node.js 24, jeśli go nie ma. W katalogu projektu uruchom `START_LICENSE_SERVER.bat`. Pierwszy start generuje konfigurację i losowe hasło właściciela, kolejne korzystają z tych samych danych. Okno serwera musi pozostać uruchomione.
+1. Uruchom `START_TAPNOVA.bat` lub poprawiony skrót „TAPNOVA - aktualna”. Program uruchamia serwer w tle, sprawdza jego gotowość i otwiera aktualną paczkę testową. W razie potrzeby zamyka normalnie stare okno TAPNOVA, aby nie przechwyciło uruchomienia nowej wersji. Nie kończy go przymusowo. Serwer można też uruchomić osobno przez `START_LICENSE_SERVER.bat`; panel otwiera `OPEN_LICENSE_ADMIN.bat`. Wymagany Node.js 24 jest wykrywany w PATH lub lokalnym środowisku Codex. Pierwszy start generuje konfigurację i losowe hasło właściciela; kolejne zachowują te same dane. Po restarcie komputera ponownie użyj skrótu — nie trzeba ręcznie włączać serwera.
 2. Otwórz `http://127.0.0.1:8787` w przeglądarce.
 3. Hasło odczytaj z `license-server/.data/OWNER-LOGIN.txt`. Zachowaj je w menedżerze haseł. Możesz potem usunąć ten plik — serwer korzysta ze skrótu hasła w `config.json`.
 4. Zaloguj się, wypełnij „Odbiorca / Twoja notatka”, wybierz 7, 30, 90 dni lub bezterminowo i limit urządzeń. Kliknij „Wygeneruj kod”.

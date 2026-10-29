@@ -31,6 +31,11 @@ const files = ['locales-pl.js','control-core.js','control-center.js','workspace-
       document.addEventListener('keydown',e=>{window.gameKeys++;e.preventDefault();},true);
     });
     await page.waitForFunction(()=>window.__keyboardTest.state.autographer.vipChecked);
+    const halloween=(await page.evaluateHandle(()=>[...window.__xbPanel.getRootNode().querySelectorAll('button')].find(b=>b.textContent.includes('Halloween Greeting')))).asElement();
+    assert.ok(halloween,'Halloween Greeting exists in the actual autograph picker');
+    await halloween.click();assert.equal(await page.evaluate(()=>window.__keyboardTest.state.autographer.selectedGreeting),'HalloweenGreeting');
+    const selected=(await page.evaluateHandle(()=>[...window.__xbPanel.getRootNode().querySelectorAll('button')].find(b=>b.textContent.includes('Halloween Greeting')))).asElement();await selected.scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(root,'test-results/halloween-greeting.png')});
     let field=(await page.evaluateHandle(()=>window.__xbPanel.getRootNode().querySelector('[data-ag-search]'))).asElement();
     assert.ok(field,'Autograph nickname field exists');
     await field.click();await page.keyboard.type('Nick gracza_42');

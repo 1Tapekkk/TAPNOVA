@@ -15,3 +15,7 @@ license-server/.data/
 /TAPNOVA/
 # Website has its own Git repository and is not part of the desktop build.
 /sites/tapnova-web/
+.wrangler/
+.dev.vars
+.dev.vars.*
+license-server/cloudflare/wrangler.local.json

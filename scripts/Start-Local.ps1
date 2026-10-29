@@ -3,10 +3,15 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $projectRoot
 try {
+    $appVersion = (Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
+    $cloudApp = Join-Path $projectRoot "release\cloudflare-$appVersion\win-unpacked\TAPNOVA.exe"
+    $cloudUrl = (Get-Content -LiteralPath (Join-Path $projectRoot 'desktop\license-server.json') -Raw | ConvertFrom-Json).serverUrl
+    if ($Mode -eq 'admin' -and $cloudUrl -match '^https://') { Start-Process $cloudUrl; exit 0 }
+    $useCloud = $Mode -eq 'app' -and (Test-Path -LiteralPath $cloudApp)
     function Test-LicenseServer {
         try { return (Invoke-RestMethod -Uri 'http://127.0.0.1:8787/health' -TimeoutSec 2).ok -eq $true } catch { return $false }
     }
-    if (-not (Test-LicenseServer)) {
+    if (-not $useCloud -and -not (Test-LicenseServer)) {
         $nodeCommand = Get-Command node.exe -ErrorAction SilentlyContinue
         $nodeCandidates = @($(if ($nodeCommand) { $nodeCommand.Source }), (Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'))
         $nodePath = $null
@@ -34,8 +39,7 @@ try {
     }
     if ($Mode -eq 'admin') { Start-Process 'http://127.0.0.1:8787'; exit 0 }
     if ($Mode -eq 'server') { exit 0 }
-    $appVersion = (Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
-    $appPath = Join-Path $projectRoot "release\license-test-$appVersion\win-unpacked\TAPNOVA.exe"
+    $appPath = if ($useCloud) { $cloudApp } else { Join-Path $projectRoot "release\license-test-$appVersion\win-unpacked\TAPNOVA.exe" }
     if (-not (Test-Path -LiteralPath $appPath)) { throw "Brak aktualnej paczki testowej $appVersion. Nie uruchomiono starego wydania." }
     $oldApps = @(Get-Process TAPNOVA -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 -and $_.Path -ne $appPath -and $_.Path.StartsWith($projectRoot + '\', [StringComparison]::OrdinalIgnoreCase) })
     foreach ($oldApp in $oldApps) {

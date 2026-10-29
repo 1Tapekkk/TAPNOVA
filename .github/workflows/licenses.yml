@@ -1,0 +1,24 @@
+name: Test Cloudflare licensing
+on:
+  push:
+    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/Check-Licenses.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
+  pull_request:
+    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/Check-Licenses.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - run: npm install --global pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:cloudflare
+      - run: node scripts/Check-Licenses.cjs

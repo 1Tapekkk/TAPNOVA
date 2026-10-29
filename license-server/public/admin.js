@@ -22,7 +22,17 @@ function render(){
  if(!list.children.length)list.append(el('p','Brak licencji pasujących do wyszukiwania.'));
 }
 async function refresh(){const data=await api('/api/admin/licenses');licenses=data.licenses;logged(true);render();$('#audit').replaceChildren(...data.audit.map(e=>el('p',date(e.at)+' · '+e.action+' · '+(e.license_id||''))))}
-$('#login').onsubmit=async e=>{e.preventDefault();try{await api('/api/admin/login',{password:$('#password').value});$('#password').value='';notice('Zalogowano.');await refresh()}catch(e){notice(e.message)}};
+async function loginPayload(password){
+ const response=await fetch('/api/admin/auth-config',{cache:'no-store'});
+ if(response.status===404||response.status===401)return {password}; // Existing local Node server.
+ if(!response.ok)throw Error('Serwer logowania jest niedostępny.');
+ const config=await response.json();
+ if(config.algorithm!=='PBKDF2-SHA256'||config.iterations!==600000||!/^[a-f0-9]{64}$/.test(config.salt))throw Error('Nieprawidłowa konfiguracja logowania.');
+ const encoder=new TextEncoder(),material=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
+ const derived=await crypto.subtle.deriveBits({name:'PBKDF2',salt:encoder.encode(config.salt),iterations:config.iterations,hash:'SHA-256'},material,256);
+ return {proof:Array.from(new Uint8Array(derived),b=>b.toString(16).padStart(2,'0')).join('')};
+}
+$('#login').onsubmit=async e=>{e.preventDefault();const button=e.currentTarget.querySelector('button');button.disabled=true;try{await api('/api/admin/login',await loginPayload($('#password').value));$('#password').value='';notice('Zalogowano.');await refresh()}catch(e){notice(e.message)}finally{button.disabled=false}};
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{});logged(false);notice('Wylogowano.')}catch(e){notice(e.message)}};
 $('#create').onsubmit=async e=>{e.preventDefault();const form=e.currentTarget,button=form.querySelector('button'),data=Object.fromEntries(new FormData(form));button.disabled=true;try{const result=await api('/api/admin/licenses',{label:data.label,durationDays:Number(data.durationDays),maxDevices:Number(data.maxDevices)});showKey(result.key);notice('Wygenerowano kod. Zapisz go i przekaż odbiorcy.');await refresh()}catch(e){notice(e.message)}finally{button.disabled=false}};
 $('#copy').onclick=async()=>{try{await navigator.clipboard.writeText($('#key').value);notice('Kod skopiowany.')}catch{$('#key').select();notice('Zaznaczono kod — skopiuj go ręcznie.')}};

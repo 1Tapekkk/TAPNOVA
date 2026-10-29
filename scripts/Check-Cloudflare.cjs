@@ -16,7 +16,8 @@ async function main(){
  try{
   const db=await mf.getD1Database('DB');
   // D1 exec accepts complete trigger definitions when each statement occupies one line.
-  const sql=fs.readFileSync(path.join(root,'license-server/cloudflare/migrations/0001_licenses.sql'),'utf8');
+  const migrations=path.join(root,'license-server/cloudflare/migrations');
+  const sql=fs.readdirSync(migrations).filter(f=>f.endsWith('.sql')).sort().map(f=>fs.readFileSync(path.join(migrations,f),'utf8')).join('\n');
   await db.exec(sql.replace(/^--.*$/gm,'').replace(/\s+/g,' '));
   const origin=(await mf.ready).origin;
   const post=(route,data,headers={})=>fetch(origin+route,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(data)});

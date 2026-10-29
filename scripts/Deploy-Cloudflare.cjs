@@ -28,8 +28,9 @@ async function main(){
  }
  run(['d1','migrations','apply','DB','--remote',...flag]);
  const count=JSON.parse(run(['d1','execute','DB','--remote','--json','--command','SELECT count(*) AS n FROM licenses',...flag],{capture:true}))[0].results[0].n;
+ const imported=JSON.parse(run(['d1','execute','DB','--remote','--json','--command',"SELECT value FROM deployment_state WHERE name='local-import-completed'",...flag],{capture:true}))[0].results.length>0;
  const localFile=path.join(root,'license-server/.data/licenses.sqlite'),localConfig=path.join(root,'license-server/.data/config.json');
- if(count===0&&fs.existsSync(localFile)&&fs.existsSync(localConfig)){
+ if(!imported&&count===0&&fs.existsSync(localFile)&&fs.existsSync(localConfig)){
   if(JSON.parse(fs.readFileSync(localConfig,'utf8')).secret!==secrets.LICENSE_SECRET)throw Error('Import wymaga tego samego sekretu HMAC.');
   const {DatabaseSync}=require('node:sqlite'),db=new DatabaseSync(localFile,{readOnly:true});let rows;
   try{rows=db.prepare('SELECT * FROM licenses').all()}finally{db.close()}
@@ -42,6 +43,9 @@ async function main(){
    console.log('Przeniesiono licencje: '+rows.length+'. Urzadzenia nalezy aktywowac ponownie w wersji z adresem Cloudflare.');
   }
  }
+ // Persist remotely even when there is nothing to import. An administrator may
+ // intentionally delete every license; later deployments must not resurrect them.
+ if(!imported)run(['d1','execute','DB','--remote','--command',"INSERT OR IGNORE INTO deployment_state(name,value) VALUES('local-import-completed','1')",...flag],{capture:true});
  // Uploading secrets may create a placeholder Worker on its first run. The real code follows.
  run(['secret','bulk',...flag],{input:JSON.stringify(secrets)});
  run(['deploy',...flag]);

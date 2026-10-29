@@ -20,7 +20,7 @@ pnpm cloudflare:deploy
 2. `setup` otwiera na Windows okno z dwoma polami hasła panelu właściciela. Możesz wpisać obecne hasło; oba wpisy muszą być identyczne i mieć przynajmniej 14 znaków. Jest to hasło panelu TAPNOVA, niezależne od hasła konta Cloudflare.
 3. Zapisany zostaje wyłącznie weryfikator PBKDF2/SHA-256, sól i losowy sekret serwera w ignorowanym `license-server/.data/cloudflare-secrets.json`. Nie ma w nim jawnego hasła. Traktuj ten plik jako poufny i wykonaj bezpieczną kopię zapasową.
 4. `deploy` tworzy lub wykorzystuje bazę `tapnova-licenses`, nakłada migracje, przesyła sekrety przez standardowe wejście do Cloudflare Secrets i publikuje Worker. Nie włącza płatnego planu ani nie kupuje domeny.
-5. Jeśli nowa baza jest pusta, skrypt przenosi istniejące lokalne licencje, zachowując kody, terminy ważności oraz blokady. Nie przenosi przypisań urządzeń: użytkownicy aktywują aplikację ponownie. Przy kolejnych wdrożeniach nie zastępuje danych w już używanej bazie.
+5. Przy pierwszym wdrożeniu do pustej bazy skrypt przenosi istniejące lokalne licencje, zachowując kody, terminy ważności oraz blokady. Nie przenosi przypisań urządzeń: użytkownicy aktywują aplikację ponownie. Znacznik w D1 zapobiega ponownemu importowi, również po celowym usunięciu wszystkich licencji przez właściciela.
 6. Otwórz adres HTTPS `workers.dev` wypisany przez Wrangler. To jednocześnie adres serwera licencji i strony logowania administratora.
 
 Konfiguracja konkretnego konta i D1 znajduje się w ignorowanym `license-server/cloudflare/wrangler.local.json`. Publiczny szablon `wrangler.json` nie zawiera sekretów ani prawdziwego identyfikatora bazy. Nie wdrażaj szablonu bez przygotowania lokalnej konfiguracji.

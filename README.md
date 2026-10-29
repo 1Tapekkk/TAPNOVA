@@ -1,21 +1,23 @@
 # TAPNOVA
 **created by 1TapGod**
 
-## Wydanie 4.1 — Windows i macOS
+## Wydanie 4.2 — Windows i macOS
 
 [Pobierz gotową aplikację z Releases](https://github.com/1Tapekkk/TAPNOVA/releases/latest). Pliki pojawiają się po zakończeniu testów i budowania wszystkich systemów w GitHub Actions.
 
 | Komputer | Plik do pobrania |
 | --- | --- |
-| Windows 10/11 (64-bit) | TAPNOVA-4.1.0-win-x64.exe |
-| Mac Apple Silicon (M1 i nowsze), macOS 13+ | TAPNOVA-4.1.0-mac-arm64.dmg |
-| Mac Intel, macOS 13+ | TAPNOVA-4.1.0-mac-x64.dmg |
+| Windows 10/11 (64-bit) | TAPNOVA-4.2.0-win-x64.exe |
+| Mac Apple Silicon (M1 i nowsze), macOS 13+ | TAPNOVA-4.2.0-mac-arm64.dmg |
+| Mac Intel, macOS 13+ | TAPNOVA-4.2.0-mac-x64.dmg |
 
 Na Windows uruchom instalator. Na Macu otwórz DMG i przeciągnij TAPNOVA do Applications. ZIP jest alternatywą dla DMG. Do używania programu nie potrzebujesz Node.js, GitHuba ani plików „Source code”.
 
-Nowości: **komentarze statusu**, wyszukiwarka narzędzi i ulubione, lokalne archiwum komentarzy, dziennik zadań oraz zdjęcia gry z ukrytym panelem TAPNOVA. [Lista zmian](docs/releases/4.1.0.md) · [Instrukcja](docs/DESKTOP-PL.md).
+Nowości: **aktualizacje z aplikacji** (instalacja i restart na Windows, pobranie i otwarcie DMG na Macu), **komentarze statusu**, wyszukiwarka narzędzi i ulubione, lokalne archiwum komentarzy, dziennik zadań oraz zdjęcia gry z ukrytym panelem TAPNOVA. [Lista zmian](docs/releases/4.2.0.md) · [Instrukcja](docs/DESKTOP-PL.md).
 
 Paczki nie mają certyfikatu wydawcy. Mac używa podpisu ad-hoc, bez notaryzacji Apple, więc system może zablokować pierwsze uruchomienie. Instrukcja opisuje instalację i ograniczenia. Testy gry używają symulowanej sesji.
+
+Użytkownicy 4.1.0 i starszych muszą zainstalować 4.2.0 ręcznie jeden raz, aby otrzymywać kolejne aktualizacje w aplikacji.
 
 ### Wydanie na GitHubie
 
@@ -92,3 +94,7 @@ Podpis „created by 1TapGod” identyfikuje tę edycję i jej oprawę.
 Informacje o bazie: [NOTICE](NOTICE), [LICENSE](LICENSE), [oryginalny README](docs/README-upstream.md) i [historia v3](docs/README-v3-history.md).
 Logika modułów gry pochodzi z dołączonego rozszerzenia; nie przeprowadzono testów funkcji na zalogowanym koncie ani pełnego audytu rozszerzenia.
 Projekt jest niezależny od właścicieli MovieStarPlanet 2.
+
+## Licencje i panel właściciela
+
+Instrukcja wdrożenia serwera, generowania kodów, aktywacji, resetów i kopii zapasowych: [LICENCJE-PL.md](docs/LICENCJE-PL.md). Publikacja wymaga publicznego serwera HTTPS i zmiennej repozytorium `TAPNOVA_LICENSE_URL`. Lokalne wydanie z adresem 127.0.0.1 jest wyłącznie do testów na komputerze właściciela.

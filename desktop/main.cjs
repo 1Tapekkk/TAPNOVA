@@ -1,16 +1,19 @@
 'use strict';
-const { app, BrowserWindow, WebContentsView, ipcMain, dialog, Menu, session } = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, dialog, Menu, session, net, shell, safeStorage } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { GAME_URL, isGameURL, tabs } = require('./policy.cjs');
 const takePhoto = require('./photo.cjs').createPhotographer();
+const {createUpdates,windowsEngine,RELEASES}=require('./updates.cjs');
 const smoke = process.argv.includes('--smoke-test');
 const resources = app.isPackaged ? path.join(process.resourcesPath,'extension') : path.join(__dirname,'../Resources/Extension');
 const shellURL = pathToFileURL(path.join(__dirname,'index.html')).href;
 const packCache = new Map();
 let win, game, gameSession, visible = false, loaded = false, busy = false;
 let lastStatus = { kind:'idle', text:'Gotowe do gry' };
+let updates;
+let license;
 app.setName('TAPNOVA');
 // A separate profile avoids corrupting or exporting the legacy WebView2 profile.
 app.setPath('userData', smoke ? path.join(require('node:os').tmpdir(),'tapnova-test-'+process.pid) : path.join(app.getPath('appData'),'TAPNOVA'));
@@ -37,6 +40,7 @@ function showGame(show) {
 }
 async function startGame() {
   if (smoke) { status('idle','Podgląd offline — połączenia z grą wyłączone'); return; }
+  if(!license?.isActive()){status('error','Aktywuj TAPNOVA prawidłową licencją.');return}
   if (busy) return;
   if (!loaded) {
     busy = true;
@@ -104,10 +108,31 @@ async function extensionMessage(event, message) {
 }
 
 async function createWindow() {
+  if(!license){
+    const config=JSON.parse(await fs.readFile(path.join(__dirname,'generated/license-config.json'),'utf8'));
+    license=require('./license.cjs').createLicense({serverUrl:config.serverUrl,fetch:(...args)=>net.fetch(...args),platform:process.platform,test:smoke&&!process.argv.includes('--test-activation'),
+      storage:require('./license.cjs').encryptedStorage({safeStorage,file:path.join(app.getPath('userData'),'license.bin')}),
+      notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:license',state);if(!state.active&&game&&!game.webContents.isDestroyed()){showGame(false);loaded=false;game.webContents.loadURL('about:blank').catch(()=>{})}}
+    });
+    await license.start();
+  }
+  if(!updates) {
+    let engine=null;
+    if(app.isPackaged&&!smoke) {
+      if(process.platform==='win32')engine=windowsEngine(new (require('electron-updater').NsisUpdater)({provider:'generic',url:RELEASES+'/latest/download'}));
+      else if(process.platform==='darwin')engine=require('./mac-updates.cjs').macEngine({fetch:(...args)=>net.fetch(...args),arch:process.arch,directory:path.join(app.getPath('userData'),'updates'),openPath:file=>shell.openPath(file)});
+    }
+    updates=createUpdates({engine,currentVersion:app.getVersion(),automatic:process.platform==='win32',
+      notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:update',state)},
+      confirm:async()=>{if(!win||win.isDestroyed())return false;const result=await dialog.showMessageBox(win,{type:'question',title:'Aktualizacja TAPNOVA',message:'Pobrać aktualizację i uruchomić TAPNOVA ponownie?',detail:'Po pobraniu aplikacja zamknie grę, zainstaluje nową wersję i uruchomi się ponownie. Zakończ najpierw aktywne zadania.',buttons:['Anuluj','Pobierz i zainstaluj'],defaultId:0,cancelId:0});return result.response===1}
+    });
+    if(engine)setTimeout(()=>updates.check(),15000).unref();
+  }
   gameSession = session.fromPartition('persist:tapnova-game');
   if (!gameSession.getPreloadScripts().some(script=>script.id==='tapnova-bridge')) gameSession.registerPreloadScript({id:'tapnova-bridge',type:'frame',filePath:path.join(__dirname,'generated/game-preload.cjs')});
   gameSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   gameSession.setPermissionCheckHandler(() => false);
+  if(!smoke)gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:/^(https?|wss?):/.test(details.url)&&!license.isActive()}));
   if (smoke) gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('data:')}));
   win = new BrowserWindow({width:1360,height:920,minWidth:960,minHeight:700,show:false,backgroundColor:'#101116',title:'TAPNOVA · created by 1TapGod',icon:path.join(__dirname,'generated/tapnova.png'),webPreferences:{preload:path.join(__dirname,'shell-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   game = new WebContentsView({webPreferences:{session:gameSession,contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
@@ -148,6 +173,13 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
     case 'status': return lastStatus;
+    case 'update-status': return updates.snapshot();
+    case 'update-check': return updates.check();
+    case 'update-apply': return updates.apply();
+    case 'license-status': return license.snapshot();
+    case 'license-activate': return license.activate(value?.key,value?.deviceLabel);
+    case 'license-refresh': return license.heartbeat();
+    case 'license-deactivate': return license.deactivate();
     case 'photo': return photograph();
     case 'home': showGame(false); return {ok:true};
     case 'game': await startGame(); return {ok:loaded};
@@ -175,4 +207,5 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   }
 });
 app.on('window-all-closed',()=>{ if(process.platform!=='darwin') app.quit(); });
+app.on('before-quit',()=>{updates?.stop();license?.stop()});
 app.on('activate',()=>{ if(!win) createWindow().catch(error=>dialog.showErrorBox('TAPNOVA',error.message)); });

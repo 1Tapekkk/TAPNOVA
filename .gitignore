@@ -6,6 +6,10 @@ release/
 node_modules/
 desktop/generated/
 test-results/
+license-server/.data/
+.env
+.env.*
+!*.env.example
 .next/
 # Empty repository accidentally created inside the application folder.
 /TAPNOVA/

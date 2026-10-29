@@ -50,10 +50,10 @@
     }
     async function ownStatus() {
       const attrs = await request(`/profileattributes/v1/profiles/${encodeURIComponent(session.profileId)}/games/j68d/attributes`);
-      const id = attrs?.additionalData?.WAYD || attrs?.additionalData?.Wayd || attrs?.additionalData?.wayd;
-      if (typeof id !== 'string' || !id) fail('noStatus');
+      const id = context.kind==='home' ? attrs?.additionalData?.DefaultMyHome : attrs?.additionalData?.WAYD || attrs?.additionalData?.Wayd || attrs?.additionalData?.wayd;
+      if (typeof id !== 'string' || !id) fail(context.kind==='home'?'noHome':'noStatus');
       const meta = await request(`/profilegeneratedcontent/v2/profiles/content/${encodeURIComponent(id)}`);
-      if (meta?.owner !== session.profileId || meta?.type !== 'WAYD') fail('owner');
+      if (meta?.owner !== session.profileId || (context.kind!=='home' && meta?.type !== 'WAYD')) fail('owner');
       return id;
     }
     return {
@@ -96,7 +96,7 @@
         check();
         const selected = [...new Set(ids)];
         if (!loaded || !selected.length || selected.some(id => !known.has(id))) fail('selection');
-        if (await ownStatus() !== threadId) fail('statusChanged');
+        if (await ownStatus() !== threadId) fail(context.kind==='home'?'homeChanged':'statusChanged');
         let markArchived;
         try { markArchived=window.__tapnovaExtras?.prepareArchive(session,threadId,selected.map(id=>known.get(id))); }
         catch(error) { fail(error.message==='archiveFull'?'archiveFull':'archiveStorage'); }
@@ -112,7 +112,7 @@
       }
     };
   }
-  let mounted = null;
+  const mounted = new Map();
   const messages = {
     archiveFull:['Archiwum ma 500 wpisów. Wyeksportuj i wyczyść je w Moim pulpicie. Niczego nie usunięto.','The archive has 500 entries. Export and clear it in My workspace. Nothing was deleted.'],
     archiveStorage:['Nie udało się zapisać kopii komentarzy. Usuwanie nie zostało rozpoczęte. Sprawdź archiwum w Moim pulpicie.','Could not save comment copies. Deletion was not started. Check the archive in My workspace.'],
@@ -120,7 +120,9 @@
     session:['Konto lub sesja się zmieniły. Wczytaj komentarze ponownie.','Account or session changed. Reload comments.'],
     region:['Nieobsługiwany region gry.','Unsupported game region.'],
     noStatus:['Najpierw zapisz własny status w grze.','Create your own status in the game first.'],
-    owner:['Nie udało się potwierdzić, że to Twój status.','Could not verify ownership of this status.'],
+    owner:['Nie udało się potwierdzić, że ta treść należy do Ciebie.','Could not verify ownership of this content.'],
+    noHome:['Najpierw zapisz własny domek w grze.','Save your own home in the game first.'],
+    homeChanged:['Twój domek się zmienił. Wczytaj komentarze ponownie.','Your home changed. Reload comments.'],
     statusChanged:['Twój status się zmienił. Wczytaj komentarze ponownie.','Your status changed. Reload comments.'],
     limit:['Limit serwera. Odczekaj chwilę i odśwież listę.','Server rate limit. Wait a moment and refresh.'],
     permission:['Gra nie zezwoliła na tę operację.','The game did not allow this operation.'],
@@ -132,8 +134,9 @@
     http:['Nie udało się połączyć z API gry. Spróbuj ponownie.','Could not reach the game API. Try again.']
   };
   function mount(parent, context) {
-    mounted?.dispose();
+    const kind=context.kind==='home'?'home':'status';mounted.get(kind)?.dispose();
     const tr=(pl,en)=>context.lang()==='pl'?pl:en;
+    const title=kind==='home'?tr('Komentarze domku','Home comments'):tr('Komentarze statusu','Status comments');
     const node=(tag,cls,text)=>{const e=document.createElement(tag);e.className=cls;if(text!==undefined)e.textContent=text;return e};
     const icons={comment:'M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9H13a8.5 8.5 0 0 1 8 8v.5M8 9h8M8 13h5',trash:'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',refresh:'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.5-2L20 8M4 16l2.4 3A7 7 0 0 0 18 17',close:'M6 6l12 12M6 18 18 6'};
     const icon=name=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.7');svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',icons[name]);svg.append(p);return svg};
@@ -168,14 +171,14 @@
       @media(max-width:440px){.tn-comments-window{height:calc(100dvh - 24px);width:calc(100vw - 20px);border-radius:22px}.tn-comments-head{padding:17px 14px;gap:8px}.tn-comments-head h2{font-size:18px}.tn-comments-icon{width:35px;height:35px}.tn-comments-toolbar{padding:12px 12px 0}.tn-comments-list{padding:14px 12px;gap:10px}.tn-comments-item{grid-template-columns:52px minmax(0,1fr) 30px;gap:6px;padding:12px 8px;border-radius:18px}.tn-comments-avatar{width:42px;height:42px}.tn-comments-person strong{font-size:10px}.tn-comments-bubble{padding:10px;border-radius:15px}.tn-comments-bubble p{font-size:12px}.tn-comments-bubble time{font-size:9px}.tn-comments-trash{width:30px;height:30px;padding:6px}.tn-comments-foot{padding:12px}.tn-comments-confirm{width:calc(100vw - 20px);border-radius:23px}.tn-comments-confirm .tn-comments-head{padding:18px}.tn-comments-confirm .tn-comments-head h2{font-size:20px}.tn-comments-confirm-body{padding:18px}}
       @media(prefers-reduced-motion:reduce){.tn-comments-window[open],.tn-comments-confirm[open]{animation:none}.tn-comments-button{transition:none;transform:none!important}}
     `;
-    const dialog=node('dialog','tn-comments-window');dialog.setAttribute('aria-label',tr('Komentarze statusu','Status comments'));
+    const dialog=node('dialog','tn-comments-window');dialog.setAttribute('aria-label',title);
     const confirmation=node('dialog','tn-comments-confirm');confirmation.setAttribute('aria-label',tr('Usunąć komentarz?','Delete comment?'));
     let controller=new AbortController(),client=createClient(context,controller.signal),items=[],selected=new Set(),more=false,busy=false,fresh=false,disposed=false,selectionMode=false,confirmationIds=[];
     let identity={...context.session()},avatars=new Map(),returnFocus=null;
-    const launch=button('','open',()=>{dialog.showModal();refresh.focus();if(!fresh&&!busy)load(false)},'tn-comments-launch');launch.append(icon('comment'),node('span','',tr('Komentarze statusu','Status comments')),node('b','','›'));
+    const launch=button('','open',()=>{dialog.showModal();refresh.focus();if(!fresh&&!busy)load(false)},'tn-comments-launch');launch.append(icon('comment'),node('span','',title),node('b','','›'));
     const refresh=iconButton(tr('Odśwież','Refresh'),'refresh',()=>load(false),'refresh');
     const close=iconButton(tr('Zamknij','Close'),'close',()=>closeWindow(),'close');
-    const head=node('header','tn-comments-head');head.append(icon('comment'),node('h2','',tr('Komentarze statusu','Status comments')),refresh,close);
+    const head=node('header','tn-comments-head');head.append(icon('comment'),node('h2','',title),refresh,close);
     const toolbar=node('div','tn-comments-toolbar'),search=node('input','');search.type='search';search.placeholder=tr('Szukaj komentarza lub autora…','Search comment or author…');search.setAttribute('aria-label',search.placeholder);
     const toggle=button(tr('Zaznacz','Select'),'toggle',()=>{selectionMode=!selectionMode;selected.clear();render()});
     const tools=node('div','tn-comments-tools');
@@ -261,8 +264,8 @@
         event.preventDefault();event.stopPropagation();targets[index<0?(event.shiftKey?targets.length-1:0):(index+(event.shiftKey?-1:1)+targets.length)%targets.length].focus();
       }
     });
-    mounted={dispose(){disposed=true;controller.abort();if(confirmation.open)confirmation.close();if(dialog.open)dialog.close()},sync(){const now=context.session();if(!root.isConnected){if(busy)controller.abort();return}if(now.token!==identity.token||now.profileId!==identity.profileId||now.base!==identity.base){controller.abort();identity={...now};items=[];selected.clear();avatars.clear();fresh=false;more=false;closeConfirmation();render();status.textContent=tr(...messages.session)}}};
+    mounted.set(kind,{dispose(){disposed=true;controller.abort();if(confirmation.open)confirmation.close();if(dialog.open)dialog.close()},sync(){const now=context.session();if(!root.isConnected){if(busy)controller.abort();return}if(now.token!==identity.token||now.profileId!==identity.profileId||now.base!==identity.base){controller.abort();identity={...now};items=[];selected.clear();avatars.clear();fresh=false;more=false;closeConfirmation();render();status.textContent=tr(...messages.session)}}});
     render();
   }
-  window.__tapnovaComments={createClient,mount,sync:()=>mounted?.sync()};
+  window.__tapnovaComments={createClient,mount,sync:()=>mounted.forEach(instance=>instance.sync())};
 })();

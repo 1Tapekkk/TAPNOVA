@@ -13,6 +13,13 @@ for (const name of assets) {
   if (!fs.existsSync(path.join(dir,name)) || fs.statSync(path.join(dir,name)).size < 1024*1024) throw Error(`Missing or incomplete installer: ${name}`);
 }
 if (!fs.existsSync(notes)) throw Error(`Missing release notes: ${notes}`);
+// Produce updater metadata from the exact complete set that will be published.
+const files=assets.map(name=>({name,size:fs.statSync(path.join(dir,name)).size,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(dir,name))).digest('hex')}));
+fs.writeFileSync(path.join(dir,'update.json'),JSON.stringify({version,files},null,2)+'\n');
+const windows=files.find(file=>file.name.endsWith('.exe'));
+const sha512=crypto.createHash('sha512').update(fs.readFileSync(path.join(dir,windows.name))).digest('base64');
+fs.writeFileSync(path.join(dir,'latest.yml'),`version: ${version}\nfiles:\n  - url: ${windows.name}\n    sha512: ${sha512}\n    size: ${windows.size}\npath: ${windows.name}\nsha512: ${sha512}\nreleaseDate: '${new Date().toISOString()}'\n`);
+assets.push('update.json','latest.yml');
 fs.copyFileSync(path.join(root,'docs/DESKTOP-PL.md'),path.join(dir,'INSTRUKCJA.md'));
 assets.push('INSTRUKCJA.md');
 fs.writeFileSync(path.join(dir,'SHA256SUMS.txt'),assets.map(name=>`${crypto.createHash('sha256').update(fs.readFileSync(path.join(dir,name))).digest('hex')}  ${name}`).join('\n')+'\n');

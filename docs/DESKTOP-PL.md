@@ -4,14 +4,39 @@ created by 1TapGod
 
 ## Uruchomienie
 
-- Windows x64: uruchom `TAPNOVA-4.1.0-win-x64.exe`, wybierz katalog instalacji i otwórz skrót „TAPNOVA 4”. Nie potrzebujesz .NET ani WebView2 — przeglądarka jest w paczce.
+- Windows x64: uruchom `TAPNOVA-4.2.0-win-x64.exe`, wybierz katalog instalacji i otwórz skrót „TAPNOVA 4”. Nie potrzebujesz .NET ani WebView2 — przeglądarka jest w paczce.
 - macOS: wybierz paczkę `arm64` dla Apple Silicon (M1 i nowsze) lub `x64` dla Intela. Otwórz DMG i przeciągnij TAPNOVA do Applications albo rozpakuj ZIP i przenieś TAPNOVA.app do Applications.
   Wymagany macOS 13 Ventura lub nowszy. Wydanie z GitHub Actions buduje i sprawdza paczki osobno na Macach Intel i Apple Silicon.
-- Kliknij „Otwórz grę”, zaloguj się w MSP2, a następnie wybierz narzędzie z bocznego menu.
+- Przy pierwszym uruchomieniu wprowadź kod licencyjny otrzymany od twórcy i nazwę tego urządzenia. Wymagane jest połączenie z serwerem licencji. Następnie kliknij „Otwórz grę”, zaloguj się w MSP2 i wybierz narzędzie.
 - W autografach otwórz panel, wpisz nick, naciśnij Enter albo kliknij wyszukiwanie. Wybierz gracza z listy wyników.
 - Przycisk STOP w panelu zatrzymuje aktywne zadania. Nie cofa operacji przyjętych wcześniej przez serwer gry.
 
+## Aktualizacje w aplikacji
+
+Wersję 4.2.0 zainstaluj ręcznie jeden raz. Wydania 4.1.0 i starsze nie mają
+mechanizmu aktualizacji. Od 4.2.0 aplikacja sprawdza nowe wydania po uruchomieniu;
+możesz też wybrać **Ustawienia aplikacji → Aktualizacje TAPNOVA**.
+
+Na Windows kliknij **Pobierz i zainstaluj**. Po potwierdzeniu TAPNOVA pobierze
+instalator z oficjalnego repozytorium, sprawdzi sumę SHA-512, zamknie grę,
+zainstaluje aktualizację i uruchomi się ponownie. Zakończ aktywne zadania przed
+potwierdzeniem. Zwykłe zamknięcie programu nie instaluje aktualizacji bez zgody.
+Korzystaj z aplikacji zainstalowanej przez EXE, a nie z folderu roboczego dewelopera.
+
+Na Macu kliknij **Pobierz aktualizację**. Aplikacja dobierze DMG dla Apple Silicon
+lub Intela, pobierze go i sprawdzi SHA-256. Otworzy instalator; zamknij TAPNOVA
+i przeciągnij nową wersję do Aplikacji, zastępując poprzednią. Aktualne paczki
+ad-hoc nie obsługują automatycznej podmiany i restartu przez Squirrel.Mac.
+Do pełnej integracji na macOS potrzebne jest odpowiednio podpisane wydanie.
+
+Błąd pobierania lub niezgodna suma pliku blokują instalację. Aktualizacja nie
+usuwa lokalnego profilu, ustawień ani archiwum. Metadane latest.yml i update.json
+są publikowane wraz z kompletem paczek; przy kolejnych wydaniach zwiększ wersję
+w package.json. Dane konta gry nie są wysyłane do serwera aktualizacji.
+
 ## Komentarze pod statusem
+
+Komentarze własnego domku znajdziesz w **Dom i przestrzeń → Komentarze domku**. Oba widoki mają wyszukiwanie, zaznaczanie i potwierdzenie usuwania. Operacje muszą być dozwolone i potwierdzone przez serwer gry.
 
 Otwórz **Profil → Status → Komentarze statusu**. Lista pojawi się w osobnym
 oknie z avatarami, nickami, treścią i datą. Ikona kosza otwiera podgląd

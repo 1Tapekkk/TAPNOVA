@@ -8,14 +8,14 @@ const root=path.resolve(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'Resources/Extension/status-comments.js'),'utf8');
 const scope={window:{},AbortController,DOMException};vm.runInNewContext(source,scope);
 const sample=(id,author='p2',text='Komentarz')=>({commentId:id,author,text,created:'2026-10-28T10:00:00Z',deleted:false,profile:{id:author,name:'Autor '+author}});
-function fixture(base='https://eu.mspapis.com'){
+function fixture(base='https://eu.mspapis.com',kind='status'){
   const state={token:'offline-token',profileId:'p1',base};
   const controller=new AbortController(),calls=[];
   const f={state,calls,controller,id:'status1',owner:'p1',items:[sample('c1'),sample('c2'),{...sample('c3'),deleted:true}],cursor:'',failure:null};
-  const context={session:()=>state,request:async(url,opts)=>{
+  const context={kind,session:()=>state,request:async(url,opts)=>{
     calls.push({url,opts});assert.equal(opts.headers.authorization,'Bearer offline-token');assert.equal(opts.redirect,'error');assert.equal(opts.credentials,'omit');
     let data;
-    if(url.includes('/profileattributes/'))data={additionalData:{WAYD:f.id}};
+    if(url.includes('/profileattributes/'))data={additionalData:{WAYD:'other-status',DefaultMyHome:f.id,...(kind==='status'?{WAYD:f.id}:{})}};
     else if(url.includes('/profilegeneratedcontent/'))data={owner:f.owner,type:'WAYD'};
     else {assert.equal(url,state.base+'/edgecomments/graphql');const body=JSON.parse(opts.body);const vars=body.variables;
       assert.equal(typeof vars,'object','GraphQL variables must be an object, not a JSON-encoded string');
@@ -57,6 +57,10 @@ async function serviceTests(){
   scope.window.__tapnovaExtras={prepareArchive(){throw Error('archiveFull')}};
   f=fixture();await f.client.load();await assert.rejects(()=>f.client.remove(['c1'],()=>{}),/archiveFull/);assert.equal(mutations(f).length,0);
   delete scope.window.__tapnovaExtras;
+  f=fixture(undefined,'home');await f.client.load();assert.equal(JSON.parse(f.calls.find(c=>c.opts.body).opts.body).variables.threadId,f.id);await f.client.remove(['c1'],()=>{});assert.equal(mutations(f).length,1);
+  f=fixture(undefined,'home');await f.client.load();f.id='changed-home';await assert.rejects(()=>f.client.remove(['c1'],()=>{}),/homeChanged/);
+  f=fixture(undefined,'home');f.owner='other';await assert.rejects(()=>f.client.load(),/owner/);
+  f=fixture(undefined,'home');f.id='';await assert.rejects(()=>f.client.load(),/noHome/);
   console.log('PASS: own-status checks, pagination, stale sessions/status, GraphQL failures, confirmed writes, partial failure, cancellation, API host restriction.');
 }
 async function browserTests(){
@@ -154,6 +158,10 @@ async function browserTests(){
     // Session changes clear old account content without making another request.
     await page.evaluate(()=>{window.__commentsTest.state.profileId='p9';window.__tapnovaComments.sync()});
     assert.equal(await page.evaluate(()=>window.__xbPanel.querySelectorAll('.tn-comments-item').length),0);
+    await page.evaluate(()=>{window.__xbPanel.querySelectorAll('dialog[open]').forEach(e=>e.close());window.__commentsTest.state.profileId='p1';window.__commentsTest.select('homes')});
+    assert.equal(await page.evaluate(()=>Array.from(window.__xbPanel.querySelectorAll('.tn-comments-launch')).some(e=>e.textContent.includes('Komentarze domku'))),true);
+    await page.evaluate(()=>window.__commentsTest.select('profile'));
+    assert.equal(await page.evaluate(()=>Array.from(window.__xbPanel.querySelectorAll('.tn-comments-launch')).some(e=>e.textContent.includes('Komentarze statusu'))),true);
     assert.deepEqual(errors,[]);
     console.log('PASS: integrated status card, text escaping, search, selection, confirmation/cancel, author pagination, modal focus and Escape, deletion, mobile layout, global STOP and account clearing.');
   }finally{await browser.close()}

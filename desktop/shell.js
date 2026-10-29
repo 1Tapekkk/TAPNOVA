@@ -55,3 +55,42 @@ document.querySelector('[data-reload]').addEventListener('click',()=>command('re
 document.querySelector('#clear-data').addEventListener('click',()=>command('clear-data'));
 api?.onStatus(displayStatus);
 if(api) command('status').then(value=>{if(value?.text)displayStatus(value);});
+let updateState={phase:'idle',automatic:api?.platform==='win32'};
+function displayUpdate(state){
+  updateState=state;
+  document.querySelectorAll('[data-app-version]').forEach(el=>{if(state.installed)el.textContent=state.installed});
+  const pending=['checking','downloading','installing'].includes(state.phase);
+  const action=document.querySelector('#update-action'),badge=document.querySelector('#update-badge'),progress=document.querySelector('#update-progress');
+  const labels={idle:'Sprawdź, czy jest dostępna nowa wersja.',disabled:'Aktualizacje są dostępne w zainstalowanym wydaniu aplikacji.',checking:'Sprawdzanie aktualizacji…',current:'Masz aktualną wersję TAPNOVA.',available:`Dostępna nowa wersja: ${state.version}.`,downloading:`Pobieranie: ${Math.round(state.progress)}%`,ready:'Aktualizacja została pobrana.',installing:state.automatic?'Instalowanie i ponowne uruchamianie…':'Otwieranie instalatora…',opened:'Instalator otwarty. Zamknij TAPNOVA i przenieś nową wersję do Aplikacji.',error:'Nie udało się sprawdzić, pobrać lub zainstalować aktualizacji. Sprawdź połączenie i spróbuj ponownie.'};
+  document.querySelector('#update-text').textContent=labels[state.phase]||labels.idle;
+  document.querySelector('#update-note').textContent=state.automatic?'Po zatwierdzeniu aktualizacji TAPNOVA zamknie grę i uruchomi się ponownie.':'Na tym wydaniu macOS aplikacja pobierze i otworzy DMG. Zastąpienie aplikacji wymaga ręcznego przeciągnięcia jej do Aplikacji.';
+  action.disabled=pending||state.phase==='disabled';
+  action.textContent=pending?'Proszę czekać…':['ready','opened'].includes(state.phase)?(state.automatic?'Zainstaluj i uruchom ponownie':'Otwórz instalator'):state.phase==='available'?(state.automatic?'Pobierz i zainstaluj':'Pobierz aktualizację'):state.phase==='error'?'Spróbuj ponownie':'Sprawdź aktualizacje';
+  progress.hidden=state.phase!=='downloading';progress.value=state.progress||0;
+  badge.hidden=!['available','downloading','ready','installing','opened'].includes(state.phase);
+  badge.textContent=state.phase==='downloading'?`Pobieranie ${Math.round(state.progress)}%`:state.phase==='available'?`Nowa wersja ${state.version}`:'Aktualizacja TAPNOVA';
+}
+document.querySelector('#update-action').addEventListener('click',async()=>{
+  const button=document.querySelector('#update-action');button.disabled=true;
+  const result=await command(['available','ready','opened'].includes(updateState.phase)?'update-apply':'update-check');
+  if(result?.phase)displayUpdate(result);else{button.disabled=false}
+});
+document.querySelector('#update-badge').addEventListener('click',()=>{document.querySelector('.nav-item[data-page="settings"]').click();setTimeout(()=>document.querySelector('#update-action').focus(),0)});
+api?.onUpdate(displayUpdate);
+if(api)command('update-status').then(state=>{if(state?.phase)displayUpdate(state)});
+
+function displayLicense(state){
+  if(!state?.phase)return;
+  const gate=document.querySelector('#license-gate');
+  const messages={locked:'Wprowadź kod aktywacyjny otrzymany od twórcy.',unconfigured:'To wydanie nie ma skonfigurowanego serwera licencji. Skontaktuj się z twórcą.',checking:'Aktywowanie…',offline:'Brak połączenia z serwerem licencji. Dostęp zostanie przywrócony po ponownej weryfikacji.',revoked:'Ta licencja została zablokowana.',expired:'Licencja wygasła. Poproś twórcę o przedłużenie.','device-limit':'Osiągnięto limit urządzeń. Zwolnij poprzednie urządzenie lub poproś twórcę o reset.','invalid-key':'Nieprawidłowy kod aktywacyjny.',error:'Aktywacja nie powiodła się. Sprawdź połączenie i spróbuj ponownie.'};
+  if(state.active){if(gate.open)gate.close();document.querySelector('#license-key').value='';}
+  else {if(!gate.open)gate.showModal();document.querySelector('#license-message').textContent=messages[state.phase]||messages.locked;}
+  document.querySelector('#license-submit').disabled=['unconfigured','checking'].includes(state.phase);
+  document.querySelector('#license-summary').textContent=state.active?(state.label+' · '+(state.expires?'ważna do '+new Date(state.expires).toLocaleString('pl-PL'):'bezterminowa')):'Licencja nieaktywna';
+}
+document.querySelector('#license-gate').addEventListener('cancel',event=>event.preventDefault());
+document.querySelector('#license-form').addEventListener('submit',async event=>{event.preventDefault();document.querySelector('#license-submit').disabled=true;displayLicense(await command('license-activate',{key:document.querySelector('#license-key').value,deviceLabel:document.querySelector('#license-device').value}));});
+document.querySelector('#license-retry').addEventListener('click',async()=>displayLicense(await command('license-refresh')));
+document.querySelector('#license-release').addEventListener('click',async()=>{if(confirm('Zwolnić to urządzenie? Gra zostanie zamknięta, a aplikacja poprosi o kod.'))displayLicense(await command('license-deactivate'));});
+api?.onLicense?.(displayLicense);
+if(api)command('license-status').then(displayLicense);

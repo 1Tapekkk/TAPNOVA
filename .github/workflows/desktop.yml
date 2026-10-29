@@ -10,6 +10,8 @@ on:
         default: true
 permissions:
   contents: read
+env:
+  TAPNOVA_LICENSE_URL: ${{ vars.TAPNOVA_LICENSE_URL }}
 concurrency:
   group: desktop-${{ github.ref }}
   cancel-in-progress: false
@@ -42,6 +44,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: node node_modules/electron/install.js
       - run: pnpm exec playwright install chromium
+      - name: Verify public license service before preparing distributable builds
+        run: node scripts/Check-License-Deployment.cjs
       - run: pnpm prepare:desktop
       - name: Test application and tools
         run: pnpm test

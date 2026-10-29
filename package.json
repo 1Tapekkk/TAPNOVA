@@ -1,6 +1,6 @@
 {
   "name": "tapnova-desktop",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "description": "TAPNOVA — Twoja przestrzeń do gry. Windows & macOS.",
@@ -10,10 +10,12 @@
   "scripts": {
     "prepare:desktop": "node scripts/Prepare-Desktop.cjs",
     "start": "node scripts/Prepare-Desktop.cjs && electron .",
-    "test": "node scripts/Check-Release.cjs && node scripts/Check-Workspace.cjs && node scripts/Check-Photo.cjs && node scripts/Check-Status-Comments.cjs && node scripts/Check-Control-Core.cjs && node scripts/Check-Keyboard.cjs && node scripts/Check-Panel.cjs && node scripts/Check-Panel-Layout.cjs && node scripts/Check-Localization.cjs && node scripts/Check-Control-Center.cjs && node scripts/Check-Desktop.cjs",
+    "test": "node scripts/Check-Greetings.cjs && node scripts/Check-Licenses.cjs && node scripts/Check-Updates.cjs && node scripts/Check-Release.cjs && node scripts/Check-Workspace.cjs && node scripts/Check-Photo.cjs && node scripts/Check-Status-Comments.cjs && node scripts/Check-Control-Core.cjs && node scripts/Check-Keyboard.cjs && node scripts/Check-Panel.cjs && node scripts/Check-Panel-Layout.cjs && node scripts/Check-Localization.cjs && node scripts/Check-Control-Center.cjs && node scripts/Check-Desktop.cjs",
     "dist:win": "node scripts/Prepare-Desktop.cjs && electron-builder --win nsis --x64 --publish never",
     "dist:mac": "node scripts/Prepare-Desktop.cjs && electron-builder --mac dmg zip --x64 --arm64 --publish never",
-    "pack": "node scripts/Prepare-Desktop.cjs && electron-builder --dir --publish never"
+    "pack": "node scripts/Prepare-Desktop.cjs && electron-builder --dir --publish never",
+    "licenses:setup": "node license-server/setup.cjs",
+    "licenses:start": "node license-server/server.cjs"
   },
   "devDependencies": {
     "@fontsource/inter": "5.3.0",
@@ -77,6 +79,14 @@
     },
     "dmg": {
       "title": "TAPNOVA"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "1Tapekkk",
+      "repo": "TAPNOVA"
     }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   }
 }

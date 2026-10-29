@@ -25,6 +25,8 @@ r=run({existing:'published'});assert.equal(r.error,undefined);assert.deepEqual(r
 r=run({existing:'draft'});assert.equal(r.error,undefined);assert.deepEqual(r.calls.map(x=>x[1]),['list','view','upload','edit']);
 r=run();assert.equal(r.error,undefined);assert.deepEqual(r.calls.map(x=>x[1]),['list','create','upload','edit']);
 const create=r.calls.find(x=>x[1]==='create');assert.ok(create.includes('--draft'));assert.ok(create.includes(sha));assert.ok(create.includes('--notes-file'));
-const upload=r.calls.find(x=>x[1]==='upload');assert.equal(upload.filter(x=>/\.(exe|dmg|zip|md|txt)$/.test(x)).length,7);
-assert.equal(r.written[0].body.trim().split('\n').length,6,'Checksums cover all installers and instructions');
+const upload=r.calls.find(x=>x[1]==='upload');assert.equal(upload.filter(x=>/\.(exe|dmg|zip|md|txt|json|yml)$/.test(x)).length,9);
+const manifest=JSON.parse(r.written.find(x=>x.file.endsWith('update.json')).body);assert.equal(manifest.version,version);assert.equal(manifest.files.length,5);
+assert.match(r.written.find(x=>x.file.endsWith('latest.yml')).body,/sha512:/);
+assert.equal(r.written.find(x=>x.file.endsWith('SHA256SUMS.txt')).body.trim().split('\n').length,8,'Checksums cover all installers, metadata and instructions');
 console.log('PASS: complete-platform release requirement, draft/upload/publish order, upload failure, immutable published versions and checksums.');

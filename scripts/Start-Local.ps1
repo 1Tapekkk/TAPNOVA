@@ -19,8 +19,10 @@ try {
         if (-not $nodePath) { throw 'Zainstaluj Node.js 24, aby uruchomic lokalny serwer licencji.' }
         $configFile = Join-Path $projectRoot 'license-server\.data\config.json'
         if (-not (Test-Path -LiteralPath $configFile)) {
-            & $nodePath (Join-Path $projectRoot 'license-server\setup.cjs')
+            $initialization = & $nodePath (Join-Path $projectRoot 'license-server\setup.cjs') | Out-String
             if ($LASTEXITCODE -ne 0) { throw 'Nie udalo sie utworzyc konfiguracji serwera.' }
+            Add-Type -AssemblyName PresentationFramework
+            [System.Windows.MessageBox]::Show($initialization, 'TAPNOVA - zapisz haslo wlasciciela') | Out-Null
         }
         $serverFile = Join-Path $projectRoot 'license-server\server.cjs'
         Start-Process -FilePath $nodePath -ArgumentList ('"' + $serverFile + '"') -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput (Join-Path $projectRoot 'license-server\.data\server.log') -RedirectStandardError (Join-Path $projectRoot 'license-server\.data\server-error.log') | Out-Null

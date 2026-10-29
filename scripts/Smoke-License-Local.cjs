@@ -3,8 +3,7 @@
 const { _electron:electron }=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),os=require('node:os');
 const root=path.resolve(__dirname,'..'),origin='http://127.0.0.1:8787';
 (async()=>{
- const credentials=fs.readFileSync(path.join(root,'license-server/.data/OWNER-LOGIN.txt'),'utf8');
- const password=credentials.match(/(?:Password:|password:)\s*(\S+)/)?.[1];if(!password)throw Error('Local owner password file is unavailable');
+ const password=process.env.TAPNOVA_OWNER_PASSWORD;if(!password)throw Error('Set TAPNOVA_OWNER_PASSWORD for this optional local owner test; the owner password is never read from a file');
  let cookie='';const post=async(route,data)=>{const r=await fetch(origin+route,{method:'POST',headers:{origin,'x-tapnova-admin':'1','content-type':'application/json',cookie},body:JSON.stringify(data)});if(r.headers.get('set-cookie'))cookie=r.headers.get('set-cookie').split(';')[0];const result=await r.json();if(!r.ok)throw Error(result.error);return result};
  await post('/api/admin/login',{password});const license=await post('/api/admin/licenses',{label:'TEST LOKALNY — właściciel',durationDays:30,maxDevices:2});
  fs.writeFileSync(path.join(root,'license-server/.data/TEST-LICENSE.txt'),'Kod lokalny TAPNOVA (tylko serwer na tym komputerze):\n'+license.key+'\n',{mode:0o600});

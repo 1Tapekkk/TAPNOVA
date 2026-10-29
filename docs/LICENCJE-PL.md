@@ -10,7 +10,7 @@ Wydanie testowe z adresem `http://127.0.0.1:8787` działa tylko z serwerem uruch
 
 1. Uruchom `START_TAPNOVA.bat` lub poprawiony skrót „TAPNOVA - aktualna”. Program uruchamia serwer w tle, sprawdza jego gotowość i otwiera aktualną paczkę testową. W razie potrzeby zamyka normalnie stare okno TAPNOVA, aby nie przechwyciło uruchomienia nowej wersji. Nie kończy go przymusowo. Serwer można też uruchomić osobno przez `START_LICENSE_SERVER.bat`; panel otwiera `OPEN_LICENSE_ADMIN.bat`. Wymagany Node.js 24 jest wykrywany w PATH lub lokalnym środowisku Codex. Pierwszy start generuje konfigurację i losowe hasło właściciela; kolejne zachowują te same dane. Po restarcie komputera ponownie użyj skrótu — nie trzeba ręcznie włączać serwera.
 2. Otwórz `http://127.0.0.1:8787` w przeglądarce.
-3. Hasło odczytaj z `license-server/.data/OWNER-LOGIN.txt`. Zachowaj je w menedżerze haseł. Możesz potem usunąć ten plik — serwer korzysta ze skrótu hasła w `config.json`.
+3. Przy pierwszym uruchomieniu zapisz hasło pokazane jednorazowo przez inicjalizator. Serwer nie zapisuje jawnego hasła w pliku; `config.json` zawiera wyłącznie sól i skrót scrypt. Jeśli go nie pamiętasz, zresetuj hasło zgodnie z instrukcją poniżej.
 4. Zaloguj się, wypełnij „Odbiorca / Twoja notatka”, wybierz 7, 30, 90 dni lub bezterminowo i limit urządzeń. Kliknij „Wygeneruj kod”.
 5. Skopiuj pełny kod. Pokazuje się tylko po utworzeniu lub zastąpieniu kodu. Później lista pokazuje identyfikator licencji i fragment kodu. Baza nie przechowuje pełnych kodów w postaci jawnej.
 6. Uruchom lokalne wydanie testowe TAPNOVA, wpisz kod i nazwę urządzenia. Po aktywacji otwórz grę. W panelu pojawi się urządzenie z ostatnią aktywnością.
@@ -79,11 +79,7 @@ docker compose build licenses
 docker compose run --rm licenses node setup.cjs
 ```
 
-4. Odczytaj produkcyjne hasło **we własnym terminalu** i zapisz je w menedżerze haseł:
-
-```sh
-docker compose run --rm licenses cat /data/OWNER-LOGIN.txt
-```
+4. Inicjalizator wypisał hasło jednorazowo w terminalu. Zapisz je w menedżerze haseł — nie ma pliku z jego jawną kopią.
 
 5. Włącz usługę:
 
@@ -128,11 +124,10 @@ Zapomniane hasło właściciela — dostęp administracyjny do serwera jest wyma
 ```sh
 docker compose stop licenses
 docker compose run --rm licenses node reset-password.cjs
-docker compose run --rm licenses cat /data/OWNER-LOGIN.txt
 docker compose start licenses
 ```
 
-Reset zachowuje sekret licencyjny, kody i daty. Restart usuwa poprzednie sesje panelu. Aktualizacja kodu serwera: wykonaj kopię, pobierz zmiany, następnie `docker compose up -d --build`. Utrzymuj jedną instancję korzystającą z tej bazy SQLite; ten projekt nie zawiera klastra ani replikacji.
+Reset wyświetla nowe hasło tylko raz, usuwa stary plik `OWNER-LOGIN.txt`, jeśli istnieje, i zapisuje wyłącznie nową sól oraz skrót. Zachowuje sekret licencyjny, kody i daty. Restart usuwa poprzednie sesje panelu. Aktualizacja kodu serwera: wykonaj kopię, pobierz zmiany, następnie `docker compose up -d --build`. Utrzymuj jedną instancję korzystającą z tej bazy SQLite; ten projekt nie zawiera klastra ani replikacji.
 
 ## Granice ochrony
 

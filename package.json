@@ -1,6 +1,6 @@
 {
   "name": "tapnova-desktop",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "description": "TAPNOVA — Twoja przestrzeń do gry. Windows & macOS.",
@@ -10,7 +10,7 @@
   "scripts": {
     "prepare:desktop": "node scripts/Prepare-Desktop.cjs",
     "start": "node scripts/Prepare-Desktop.cjs && electron .",
-    "test": "node scripts/Check-Greetings.cjs && node scripts/Check-Licenses.cjs && node scripts/Check-Updates.cjs && node scripts/Check-Release.cjs && node scripts/Check-Workspace.cjs && node scripts/Check-Photo.cjs && node scripts/Check-Status-Comments.cjs && node scripts/Check-Control-Core.cjs && node scripts/Check-Keyboard.cjs && node scripts/Check-Panel.cjs && node scripts/Check-Panel-Layout.cjs && node scripts/Check-Localization.cjs && node scripts/Check-Control-Center.cjs && node scripts/Check-Desktop.cjs",
+    "test": "node scripts/Check-Greetings.cjs && node scripts/Check-Greeting-Batch.cjs && node scripts/Check-Greeting-Batch-UI.cjs && node scripts/Check-Licenses.cjs && node scripts/Check-Updates.cjs && node scripts/Check-Release.cjs && node scripts/Check-Workspace.cjs && node scripts/Check-Photo.cjs && node scripts/Check-Status-Comments.cjs && node scripts/Check-Control-Core.cjs && node scripts/Check-Keyboard.cjs && node scripts/Check-Panel.cjs && node scripts/Check-Panel-Layout.cjs && node scripts/Check-Localization.cjs && node scripts/Check-Control-Center.cjs && node scripts/Check-Desktop.cjs",
     "dist:win": "node scripts/Prepare-Desktop.cjs && electron-builder --win nsis --x64 --publish never",
     "dist:mac": "node scripts/Prepare-Desktop.cjs && electron-builder --mac dmg zip --x64 --arm64 --publish never",
     "pack": "node scripts/Prepare-Desktop.cjs && electron-builder --dir --publish never",

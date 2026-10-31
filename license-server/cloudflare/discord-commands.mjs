@@ -1,3 +1,4 @@
+import {templateChoices} from './discord-templates.mjs';
 const command=(name,description,options=[],owner=false)=>({name,description,type:1,dm_permission:false,...(owner?{default_member_permissions:'0'}:{}),...(options.length?{options}:{})});
 const option=(type,name,description,extra={})=>({type,name,description,required:true,...extra});
 const days=option(4,'dni','Okres licencji; 0 oznacza bezterminowo',{choices:[7,30,90,0].map(value=>({name:value?`${value} dni`:'Bezterminowo',value}))});
@@ -14,7 +15,7 @@ export const commands=[
  command('powitania','Właściciel: automatyczne powitania nowych członków',[
   option(3,'akcja','Wybierz działanie',{choices:[{name:'Status',value:'status'},{name:'Włącz',value:'wlacz'},{name:'Wyłącz',value:'wylacz'}]}),channel],true),
  command('embed','Właściciel: kreator wiadomości z podglądem',[
-  option(3,'szablon','Wybierz wygląd i przykładową treść',{required:false,choices:[['Ogłoszenie','ogloszenie'],['Cennik','cennik'],['Aktywacja','aktywacja'],['Instrukcja','instrukcja'],['Aktualizacja','aktualizacja'],['Konkurs','konkurs']].map(([name,value])=>({name,value}))}),channel,...pictures],true),
+  option(3,'szablon','Wybierz treść dopasowaną do kanału',{required:false,choices:templateChoices}),channel,...pictures],true),
  command('aktualizacja','Właściciel: przygotuj changelog',[
   option(3,'wersja','Numer wersji',{max_length:40}),option(3,'zmiany','Lista zmian (możesz uzupełnić w edytorze)',{required:false,max_length:4000}),channel,...pictures],true),
  command('panel-aktywacji','Właściciel: panel z przyciskiem Aktywuj kod',[channel,...pictures],true),

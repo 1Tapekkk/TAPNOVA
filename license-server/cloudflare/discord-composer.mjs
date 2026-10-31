@@ -1,3 +1,4 @@
+import {channelTemplates} from './discord-templates.mjs';
 const API='https://discord.com/api/v10';
 const UA='DiscordBot (https://github.com/1Tapekkk/TAPNOVA, 1.0)';
 const DOWNLOAD='https://github.com/1Tapekkk/TAPNOVA/releases/latest';
@@ -19,7 +20,11 @@ const presets={
  konkurs:['🎉 TAPNOVA • Konkurs','**Nagroda**\nOpisz nagrodę.\n\n**Jak wziąć udział**\nWpisz zasady udziału.\n\n**Termin i ogłoszenie wyników**\nWpisz datę oraz sposób wyboru zwycięzcy.']
 };
 function defaults(template='ogloszenie'){
- if(!presets[template])fail('Wybierz dostępny szablon.');
+ if(Object.hasOwn(channelTemplates,template)){
+  const t=channelTemplates[template];
+  return {title:t.title,description:t.description,color:0xb39af4,footer:'TAPNOVA • Twoja przestrzeń',image:null,thumbnail:null,download:t.download?DOWNLOAD:'',buy:t.buy?'auto':'',help:'auto',activate:!!t.activate};
+ }
+ if(!Object.hasOwn(presets,template))fail('Wybierz dostępny szablon.');
  const [title,description]=presets[template];
  return {title,description,color:0xb39af4,footer:'TAPNOVA • Twoja przestrzeń',image:null,thumbnail:null,download:DOWNLOAD,buy:template==='cennik'?'auto':'',help:'auto',activate:['aktywacja','instrukcja','cennik'].includes(template)};
 }

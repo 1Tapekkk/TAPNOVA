@@ -76,6 +76,27 @@ Publikować i edytować może wyłącznie skonfigurowany właściciel. Bot potrz
 
 Szablon konkursu jest ogłoszeniem — nie zbiera zgłoszeń ani nie losuje zwycięzców. Przycisk Kup podaje kontakt do właściciela lub otwiera ustawiony link; nie realizuje płatności. W cenniku uzupełnij ceny przed publikacją. W razie niepewnego wyniku API bot prosi o sprawdzenie kanału, zamiast automatycznie wysyłać duplikat.
 
+### Szablony do kanałów
+
+W `/embed` wybierz pole **szablon**, a opcjonalnie **kanal**. Dostępnych jest 18 szablonów: dotychczasowe Ogłoszenie, Cennik, Aktywacja, Instrukcja, Aktualizacja i Konkurs oraz:
+
+| Kanał | Szablon |
+| --- | --- |
+| regulamin | Regulamin |
+| witaj | Powitanie / start |
+| pobierz-tapnova | Pobieranie aplikacji |
+| kup-dostęp | Zakup dostępu |
+| poradniki | Poradniki |
+| pomoc, sprawy-techniczne | Pomoc / zgłoszenie błędu |
+| opinie | Opinie klientów |
+| propozycje | Propozycje funkcji |
+| status-usługi | Status usługi / przerwa |
+| pogaduchy | Pogaduchy |
+| zamówienia | Zamówienia — dla obsługi |
+| zadania | Zadania — dla obsługi |
+
+Każdy wybór otwiera prywatny, edytowalny podgląd; publikacja następuje dopiero po **Opublikuj**. Regulamin zawiera zasady społeczności, a nie warunki sprzedaży. Uzupełnij pola w nawiasach w statusie usługi i zadaniach oraz dane zamówienia. Status jest komunikatem ręcznym, nie automatycznym monitoringiem. Szablon Powitanie / start to stała wiadomość informacyjna — automatyczne powitania nadal konfiguruje `/powitania`. Szablony dla obsługi nie zmieniają uprawnień kanału; wybierz kanał prywatny. Wszystkie szablony pozwalają dodać zdjęcia, kolor i przyciski.
+
 ## Automatyczne powitania
 
 `/powitania akcja:Włącz kanal:...` włącza powitania na wybranym kanale. `/powitania akcja:Status` pokazuje stan i błędy, a `/powitania akcja:Wyłącz` zatrzymuje kolejkę. Komenda jest dostępna tylko dla właściciela. Włącz w Discord Developer Portal → Bot → Privileged Gateway Intents **Server Members Intent**; bot potrzebuje również dostępu do kanału, wysyłania wiadomości, osadzania linków, załączników i historii.

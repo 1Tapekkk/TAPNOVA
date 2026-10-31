@@ -68,7 +68,23 @@ module.exports=async function checkEmbeds({env,DB,send,command,options,calls}){
   assert.equal((await send(component('tapnova-buy',outsider))).body.data.flags,64);
   await send(owner('edytuj-embed',{wiadomosc:`https://discord.com/channels/${env.DISCORD_GUILD_ID}/${channel}/${first.id}`}));preview=last();
   await send(component(button(preview,'publish')));assert.equal(publicWrites.at(-1).method,'PATCH');assert.equal(messages.size,1);assert.equal(messages.get(first.id).attachments[0].id,first.attachments[0].id);
-  for(const template of ['ogloszenie','aktywacja','instrukcja','aktualizacja','konkurs']){await send(owner('embed',{szablon:template}));assert.ok(last().embeds[0].title);await send(component(button(last(),'cancel')));assert.match(last().content,/Anulowano/);}
+  const {commands}=await import('../license-server/cloudflare/discord-commands.mjs');
+  const choices=commands.find(c=>c.name==='embed').options.find(o=>o.name==='szablon').choices;
+  assert.ok(choices.length<=25);assert.equal(new Set(choices.map(c=>c.value)).size,choices.length);
+  const writesBeforeTemplates=publicWrites.length;
+  for(const {value:template} of choices){
+   assert.equal((await send(owner('embed',{szablon:template}))).body.type,5);
+   const draft=last();assert.ok(draft.embeds[0].title.length<=256);assert.ok(draft.embeds[0].description.length<=4000);
+   assert.match(draft.content,/Prywatny podgląd/);
+   if(template==='regulamin'){assert.match(draft.embeds[0].description,/Szanuj innych/);assert.ok(!draft.content.includes('Kup dostęp'));}
+   if(template==='pobieranie'){assert.match(draft.content,/Pobierz aplikację/);assert.match(draft.embeds[0].description,/arm64/);}
+   const edit=(await send(component(button(draft,'text')))).body;assert.equal(edit.type,9);
+   await send(component(button(draft,'cancel')));assert.match(last().content,/Anulowano/);
+  }
+  assert.equal(publicWrites.length,writesBeforeTemplates,'Template selection never publishes to a channel');
+  await send(owner('embed',{szablon:'regulamin'}));await send(component(button(last(),'publish')));
+  assert.match([...messages.values()].at(-1).embeds[0].title,/Zasady serwera/);
+  await send(owner('embed',{szablon:'nie-istnieje'}));assert.match(last().content,/dostępny szablon/);
   await send(owner('aktualizacja',{wersja:'4.2.3',zmiany:'Naprawiona kolejka'}));assert.match(last().embeds[0].title,/4\.2\.3/);assert.equal(last().embeds[0].description,'Naprawiona kolejka');
   await send(component(button(last(),'cancel')));
   const bad=owner('embed',{zdjecie:attachmentId});bad.data.resolved={attachments:{[attachmentId]:{...data,url:'https://localhost/secrets'}}};await send(bad);assert.match(last().content,/załącznik Discorda/);

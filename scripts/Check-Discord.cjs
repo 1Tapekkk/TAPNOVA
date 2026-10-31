@@ -48,6 +48,12 @@ async function main(){
   assert.match((await send({...command('pomoc'),guild_id:other})).body.data.content,/tylko na serwerze/);
   assert.equal((await send(command('pomoc'))).body.data.flags,64);
   assert.equal((await send(command('polacz'))).body.type,9);
+  // Exercise the signed interaction route, not just the welcome handler directly.
+  const beforeWelcome=calls.length;
+  assert.match((await send(command('powitania',user,options({akcja:'status'})))).body.data.content,/wyłącznie dla właściciela/);
+  assert.equal(calls.length,beforeWelcome);
+  assert.equal((await send(command('powitania',env.DISCORD_OWNER_ID,options({akcja:'status'})))).body.type,5);
+  assert.match(JSON.parse(calls.filter(c=>c.method==='PATCH').at(-1).body).content,/Powitania TAPNOVA/);
   assert.match((await send(command('wydaj'))).body.data.content,/wyłącznie dla właściciela/);
   const issue=command('wydaj',env.DISCORD_OWNER_ID,options({uzytkownik:user,dni:30,urzadzenia:1}));
   assert.equal((await send(issue)).body.type,5);

@@ -32,4 +32,5 @@ export const commands=[
  command('resetuj','Właściciel: usuń przypisania urządzeń',[license],true),
  command('status-bota','Właściciel: sprawdź połączenie i synchronizację ról',[],true)
 ];
-export const ownerCommands=new Set(['wydaj','licencje','przedluz','zablokuj','odblokuj','odlacz','usun','resetuj','status-bota','embed','aktualizacja','panel-aktywacji','edytuj-embed']);
+// Keep registration, owner authorization and interaction routing in sync.
+export const ownerCommands=new Set(commands.filter(c=>c.default_member_permissions==='0').map(c=>c.name));

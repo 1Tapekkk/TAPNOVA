@@ -2,6 +2,7 @@ import {createStore} from './store.mjs';
 import {hasher,random} from './crypto.mjs';
 import {commands,ownerCommands} from './discord-commands.mjs';
 import {isComposer,composerModal,runComposer} from './discord-composer.mjs';
+import {welcomeCommand} from './discord-welcome.mjs';
 const API='https://discord.com/api/v10';
 const USER_AGENT='DiscordBot (https://github.com/1Tapekkk/TAPNOVA, 1.0)';
 const RELEASES='https://github.com/1Tapekkk/TAPNOVA/releases/latest';
@@ -122,6 +123,7 @@ async function execute(env,i) {
  if(isComposer(i))return runComposer(env,i);
  if(i.type===5)return connect(env,i);
  const name=i.data.name,options=Object.fromEntries((i.data.options||[]).map(o=>[o.name,o.value]));
+ if(name==='powitania')return welcomeCommand(env,i,options);
  if(name==='wydaj')return grant(env,i,options);
  if(['licencje','zablokuj','odblokuj','odlacz','usun'].includes(name))return managePerson(env,i,name,options);
  if(name==='licencja'){

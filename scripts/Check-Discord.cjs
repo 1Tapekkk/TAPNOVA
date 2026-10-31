@@ -107,4 +107,4 @@ async function main(){
   console.log('Discord: signatures, owner/guild boundaries, real D1, private-code linking, per-user block/unblock/delete/unlink, multi-license ambiguity, confirmation, replay protection, device sessions, roles, API failures and rate limits passed.');
  }finally{global.fetch=savedFetch;await mf.dispose()}
 }
-main().then(()=>require('./Check-Discord-Workers.cjs')()).catch(e=>{console.error(e);process.exitCode=1});
+main().then(()=>require('./Check-Discord-Workers.cjs')()).then(()=>require('./Check-Discord-Welcome.cjs')()).catch(e=>{console.error(e);process.exitCode=1});

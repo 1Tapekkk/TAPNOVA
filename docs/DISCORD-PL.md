@@ -61,7 +61,7 @@ Kod przekazany prywatnie z panelu właściciela działa tak samo: klient na serw
 
 ## Kreator wiadomości i grafiki z telefonu
 
-Bot udostępnia 17 komend. Cztery dotyczą wiadomości:
+Bot udostępnia 18 komend. Cztery dotyczą kreatora wiadomości:
 
 1. `/embed` — wybierz szablon: ogłoszenie, cennik, aktywacja, instrukcja, aktualizacja lub konkurs. Opcjonalnie wybierz kanał, zdjęcie i miniaturkę jako załączniki.
 2. `/aktualizacja wersja:4.2.3 zmiany:...` — przygotuj changelog.
@@ -75,6 +75,22 @@ Najpierw widzisz **prywatny podgląd**. Przycisk **Popraw tekst** otwiera formul
 Publikować i edytować może wyłącznie skonfigurowany właściciel. Bot potrzebuje na docelowym kanale uprawnień: Wyświetlanie kanału, Wysyłanie wiadomości, Osadzanie linków, Załączanie plików i Czytanie historii wiadomości. Zarządzanie rolami jest wymagane osobno do nadawania roli Klient. Edytor obsługuje jeden embed i przyciski TAPNOVA; odmawia zmiany bogatszych, nieobsługiwanych wiadomości, aby nie zgubić ich zawartości.
 
 Szablon konkursu jest ogłoszeniem — nie zbiera zgłoszeń ani nie losuje zwycięzców. Przycisk Kup podaje kontakt do właściciela lub otwiera ustawiony link; nie realizuje płatności. W cenniku uzupełnij ceny przed publikacją. W razie niepewnego wyniku API bot prosi o sprawdzenie kanału, zamiast automatycznie wysyłać duplikat.
+
+## Automatyczne powitania
+
+`/powitania akcja:Włącz kanal:...` włącza powitania na wybranym kanale. `/powitania akcja:Status` pokazuje stan i błędy, a `/powitania akcja:Wyłącz` zatrzymuje kolejkę. Komenda jest dostępna tylko dla właściciela. Włącz w Discord Developer Portal → Bot → Privileged Gateway Intents **Server Members Intent**; bot potrzebuje również dostępu do kanału, wysyłania wiadomości, osadzania linków, załączników i historii.
+
+Nowa osoba otrzymuje polskie powitanie z awatarem, nazwą, liczbą obecnych członków (łącznie z botami), fioletową kartą oraz przyciskami aktywacji i pomocy. Liczba oznacza aktualną wielkość serwera, a nie kolejny numer dołączenia. Duży napis TAPNOVA został usunięty z bazowej grafiki; tekst i profil są nakładane osobno dla każdego powitania.
+
+Cloudflare sprawdza listę członków co minutę. To sprawdzanie okresowe, więc powitanie nie jest natychmiastowe; jedna wiadomość jest wysyłana na cykl, a większa grupa czeka w kolejce. Osoba, która wejdzie i wyjdzie między sprawdzeniami, może nie otrzymać powitania. Obecni członkowie i boty są pomijani. Osoby objęte Membership Screening są witane po jego zakończeniu. Ponowne dołączenie jest osobnym zdarzeniem. Włączenie nie publikuje powitań wstecz, a ponowne włączenie po przerwie dotyczy kolejnych dołączeń. Wiadomość będąca już w trakcie wysyłania może dotrzeć mimo wyłączenia.
+
+Karta PNG powstaje w Cloudflare Browser Run; nie wymaga włączonego komputera. Darmowy plan ma obecnie 10 minut renderowania dziennie. Gdy renderowanie jest niedostępne lub osiągnie limit, bot wysyła powitanie ze statycznym tłem i osobnym awatarem w embedzie. Lista jest ograniczona do 5000 członków; większy serwer wymaga innego sposobu synchronizacji. Workers, D1 i Browser Run mają osobne limity darmowego planu. Nowy harmonogram Cron może propagować się do 15 minut.
+
+Zdarzenia są zapisywane w `discord_welcome_events` (ID użytkownika, czas dołączenia, stan wysyłania, ID wiadomości), a ustawienia w `discord_welcome_config`. Nicki i awatary są pobierane przy wysyłaniu; nie zapisujemy ich w tych tabelach. Blokada cyklu i unikalny klucz zdarzenia zapobiegają równoległej wysyłce. HTTP 429 respektuje czas oczekiwania. Niepewna odpowiedź po wysłaniu nie jest automatycznie ponawiana — sprawdź kanał, aby uniknąć duplikatu. Stan `failed` oznacza znane odrzucenie przez Discord, `uncertain` wymaga sprawdzenia; licznik błędów zobaczysz przez `/powitania`.
+
+Narzędzia właściciela: `node scripts/Inspect-Discord.cjs welcome` odczytuje konfigurację, kanały i dostęp do listy członków; `welcome-enable ID_KANALU` włącza, `welcome-disable` wyłącza. `welcome-preview` zapisuje lokalny podgląd z profilem właściciela bez wysyłania na kanał. `welcome-check` uruchamia rzeczywisty cykl i może wysłać powitanie nowej osoby. Wymagają istniejącej konfiguracji właściciela Cloudflare. Publiczne tło: `/discord/welcome-background.png`.
+
+Źródła: [Discord: wymagany intent](https://github.com/discord/discord-api-docs/blob/main/developers/events/gateway.mdx), [Cloudflare: limity Browser Run](https://developers.cloudflare.com/browser-run/limits/), [renderowanie przez binding](https://developers.cloudflare.com/changelog/post/2026-05-28-use-browser-run-quick-actions-directly-from-workers/).
 
 ## Diagnozowanie publikacji
 

@@ -2,6 +2,7 @@ import {createStore,fail} from './store.mjs';
 import {random,sha,hasher,equal} from './crypto.mjs';
 import {discordFetch,syncDiscord,registerDiscordCommands} from './discord.mjs';
 import {inspectDiscordChannel,inspectDiscordDraft} from './discord-composer.mjs';
+import {welcomeStatus,configureWelcome,previewWelcome,syncWelcomes} from './discord-welcome.mjs';
 const security={
   'cache-control':'no-store', 'x-content-type-options':'nosniff', 'referrer-policy':'no-referrer',
   'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
@@ -22,7 +23,7 @@ export default {
   async fetch(request,env,ctx){
     try {
       const url=new URL(request.url),path=url.pathname,post=request.method==='POST';
-      if(request.method==='GET'&&['/','/admin.js','/admin.css'].includes(path)){
+      if(request.method==='GET'&&['/','/admin.js','/admin.css','/discord/welcome-background.png'].includes(path)){
         const asset=await env.ASSETS.fetch(request);const response=new Response(asset.body,asset);for(const[k,v]of Object.entries(security))response.headers.set(k,v);return response;
       }
       if(!/^[a-f0-9]{64}$/.test(env.LICENSE_SECRET||'')||!/^[a-f0-9]{64}$/.test(env.ADMIN_VERIFIER||'')||!/^[a-f0-9]{64}$/.test(env.ADMIN_SALT||''))fail('not-configured',503);
@@ -47,6 +48,10 @@ export default {
         const th=token?await hash(token):'';
         const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),env.ADMIN_VERIFIER).first();
         if(!session)fail('login',401);
+        if(path==='/api/admin/discord/welcome'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'welcome-status');return json(await welcomeStatus(env,true))}
+        if(path==='/api/admin/discord/welcome'&&post){await rate(env.DISCORD_LIMIT,'welcome-config');return json(await configureWelcome(env,await body(request)))}
+        if(path==='/api/admin/discord/welcome-check'&&post){await rate(env.DISCORD_LIMIT,'welcome-check');await body(request);await syncWelcomes(env);return json(await welcomeStatus(env))}
+        if(path==='/api/admin/discord/welcome-preview'&&post){await rate(env.DISCORD_LIMIT,'welcome-preview');await body(request);return new Response(await previewWelcome(env),{headers:{...security,'content-type':'image/png'}})}
         if(path==='/api/admin/discord/commands'&&post){await body(request);return json(await registerDiscordCommands(env))}
         if(path==='/api/admin/discord/channel'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'admin-channel-inspection');return json(await inspectDiscordChannel(env,url.searchParams.get('id')))}
         if(path==='/api/admin/discord/draft'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'admin-draft-inspection');return json(await inspectDiscordDraft(env,url.searchParams.get('id')))}
@@ -69,6 +74,7 @@ export default {
     }catch(e){return json({error:e.status?e.message:'service-unavailable'},e.status||503)}
   },
   async scheduled(event,env){
+    if(event.cron==='* * * * *'){await syncWelcomes(env);return}
     if(event.cron==='*/5 * * * *'){await syncDiscord(env);return}
     await env.DB.batch([
       env.DB.prepare('DELETE FROM admin_sessions WHERE expires<?').bind(Date.now()),

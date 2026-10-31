@@ -11,6 +11,8 @@ export const commands=[
  command('pobierz','Oficjalna strona pobierania TAPNOVA'),
  command('licencja','Sprawdź swoją licencję i odśwież rolę Klient'),
  command('polacz','Połącz posiadany kod licencji ze swoim kontem Discord'),
+ command('powitania','Właściciel: automatyczne powitania nowych członków',[
+  option(3,'akcja','Wybierz działanie',{choices:[{name:'Status',value:'status'},{name:'Włącz',value:'wlacz'},{name:'Wyłącz',value:'wylacz'}]}),channel],true),
  command('embed','Właściciel: kreator wiadomości z podglądem',[
   option(3,'szablon','Wybierz wygląd i przykładową treść',{required:false,choices:[['Ogłoszenie','ogloszenie'],['Cennik','cennik'],['Aktywacja','aktywacja'],['Instrukcja','instrukcja'],['Aktualizacja','aktualizacja'],['Konkurs','konkurs']].map(([name,value])=>({name,value}))}),channel,...pictures],true),
  command('aktualizacja','Właściciel: przygotuj changelog',[

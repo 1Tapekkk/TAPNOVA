@@ -120,7 +120,6 @@ async function createWindow() {
       storage:require('./license.cjs').encryptedStorage({safeStorage,file:path.join(app.getPath('userData'),'license.bin')}),
       notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:license',state);if(!state.active&&game&&!game.webContents.isDestroyed()){showGame(false);loaded=false;game.webContents.loadURL('about:blank').catch(()=>{})}}
     });
-    await license.start();
   }
   if(!updates) {
     let engine=null;
@@ -176,6 +175,8 @@ async function createWindow() {
   await win.loadFile(path.join(__dirname,'index.html'));
   if (!smoke) win.show();
   status('idle','Gotowe do gry');
+  // The shell must be visible before the OS may ask for access to secure storage.
+  void license.start();
 }
 
 ipcMain.handle('tapnova:extension',extensionMessage);
@@ -195,7 +196,7 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
     case 'update-apply': return updates.apply();
     case 'license-status': return license.snapshot();
     case 'license-activate': return license.activate(value?.key,value?.deviceLabel);
-    case 'license-refresh': return license.heartbeat();
+    case 'license-refresh': return license.refresh();
     case 'license-deactivate': return license.deactivate();
     case 'photo': return photograph();
     case 'home': showGame(false); return {ok:true};

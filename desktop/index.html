@@ -11,8 +11,9 @@
 <body>
   <dialog id="license-gate" aria-labelledby="license-title">
     <form id="license-form"><span class="eyebrow">TAPNOVA · AKTYWACJA</span><h1 id="license-title">Twoja przestrzeń czeka.</h1><p id="license-message" role="status">Sprawdzanie licencji…</p>
-    <label>Kod od twórcy aplikacji<input id="license-key" autocomplete="off" spellcheck="false" maxlength="100" required placeholder="TN-…"></label>
-    <label>Nazwa tego urządzenia<input id="license-device" maxlength="80" required placeholder="Np. laptop Ani"></label>
+    <aside class="keychain-help" id="keychain-help" hidden><strong>macOS: „TAPNOVA Safe Storage”</strong><p>To systemowa zgoda na odczyt lub zapis aktywacji. Hasło pęku kluczy „Logowanie” jest zwykle hasłem do konta na tym Macu — nie kodem licencji ani hasłem MSP2.</p><p>Wpisz je wyłącznie w oknie macOS. „Pozwól” daje dostęp teraz, a „Zawsze pozwalaj” zapamiętuje zgodę dla aplikacji. Po aktualizacji system może zapytać ponownie. TAPNOVA nie otrzymuje wpisanego hasła do Maca.</p></aside>
+    <div id="license-credentials"><label>Kod od twórcy aplikacji<input id="license-key" autocomplete="off" spellcheck="false" maxlength="100" required placeholder="TN-…"></label>
+    <label>Nazwa tego urządzenia<input id="license-device" maxlength="80" required placeholder="Np. laptop Ani"></label></div>
     <p class="license-privacy">Serwer zapisuje nazwę urządzenia, losowy identyfikator instalacji, system i ostatnią aktywność. Nie wysyła hasła ani sesji MSP2. Aplikacja wymaga połączenia z serwerem licencji.</p>
     <button class="button button-primary" id="license-submit" type="submit">Aktywuj aplikację</button><button class="button button-secondary" id="license-retry" type="button">Sprawdź połączenie ponownie</button></form>
   </dialog>

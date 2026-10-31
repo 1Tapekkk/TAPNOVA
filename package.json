@@ -1,6 +1,6 @@
 {
   "name": "tapnova-desktop",
-  "version": "4.2.3",
+  "version": "4.2.4",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "description": "TAPNOVA — Twoja przestrzeń do gry. Windows & macOS.",

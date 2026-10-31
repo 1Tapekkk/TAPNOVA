@@ -47,7 +47,12 @@ async function main(){
   await shell.goto(require('node:url').pathToFileURL(path.resolve(__dirname,'../desktop/index.html')).href);await shell.locator('#license-gate').waitFor({state:'visible'});await shell.keyboard.press('Escape');assert.ok(await shell.locator('#license-gate').isVisible());
   await shell.locator('#license-key').fill('TN-TEST');await shell.locator('#license-device').fill('Laptop');await shell.locator('#license-submit').click();await shell.locator('#license-gate').waitFor({state:'hidden'});assert.equal(await shell.locator('#license-key').inputValue(),'');
   await shell.evaluate(()=>window.licenseChange({phase:'expired',active:false}));await shell.locator('#license-gate').waitFor({state:'visible'});await shell.screenshot({path:path.resolve(__dirname,'../test-results/license-activation.png')});
+  const mac=await browser.newPage({viewport:{width:960,height:700}});await mac.addInitScript(()=>{let attempts=0;window.commands=[];window.tapnova={platform:'darwin',onStatus(){},onUpdate(){},onLicense(){},command:async(name)=>{window.commands.push(name);return name==='license-status'?{phase:'storage-locked',active:false}:name==='license-refresh'?{phase:++attempts===1?'storage-error':'active',active:attempts>1,label:'Test'}:{ok:true}}}});
+  await mac.goto(require('node:url').pathToFileURL(path.resolve(__dirname,'../desktop/index.html')).href);await mac.locator('#keychain-help').waitFor({state:'visible'});
+  assert.match(await mac.locator('#keychain-help').innerText(),/hasłem do konta na tym Macu/);assert.ok(await mac.locator('#license-key').isDisabled());assert.ok(await mac.locator('#license-submit').isDisabled());
+  assert.ok(!await mac.evaluate(()=>window.commands.includes('license-refresh')));await mac.locator('#license-retry').click();assert.match(await mac.locator('#license-message').innerText(),/Dane nie zostały wyczyszczone/);
+  await mac.screenshot({path:path.resolve(__dirname,'../test-results/license-macos-keychain.png')});await mac.locator('#license-retry').click();await mac.locator('#license-gate').waitFor({state:'hidden'});
   console.log('PASS: SQLite expiry/revocation/reset/rotation, atomic device limits, bearer binding, online/offline lease, admin auth/CSRF, real owner UI and activation gate.');
  }finally{await browser?.close();if(server)await new Promise(r=>server.close(r));assert.equal(path.dirname(dir),os.tmpdir());assert.ok(path.basename(dir).startsWith('tapnova-license-test-'));fs.rmSync(dir,{recursive:true,force:true})}
 }
-main().catch(e=>{console.error(e);process.exitCode=1});
+main().then(()=>require('./Check-License-Storage.cjs')()).catch(e=>{console.error(e);process.exitCode=1});

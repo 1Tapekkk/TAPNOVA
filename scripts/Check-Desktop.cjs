@@ -32,10 +32,13 @@ const root = path.resolve(__dirname,'..');
       const file=app.getPath('userData')+'/test-license.bin';
       const storage=req('./desktop/license.cjs').encryptedStorage({safeStorage,file});
       const value={deviceId:'fixture-installation',token:'fixture-token-not-a-real-license'};
-      await storage.write(value);const bytes=await fs.readFile(file),read=await storage.read();await storage.clear();
-      return {roundtrip:read.token===value.token&&!bytes.includes(Buffer.from(value.token)),available:safeStorage.isEncryptionAvailable()};
+      await storage.write(value);const bytes=await fs.readFile(file),read=await storage.read();
+      // Simulate an upgrade from the synchronous storage used before 4.2.4.
+      await fs.writeFile(file,safeStorage.encryptString(JSON.stringify(value)));const legacy=await storage.read();await storage.clear();
+      return {roundtrip:read.token===value.token&&!bytes.includes(Buffer.from(value.token)),legacy:legacy.token===value.token,available:await safeStorage.isAsyncEncryptionAvailable()};
     });
     assert.equal(encrypted.available,true);assert.equal(encrypted.roundtrip,true,'Native encrypted license storage roundtrip');
+    assert.equal(encrypted.legacy,true,'Existing encrypted activation survives migration to async storage');
     assert.match(await page.title(),/TAPNOVA/);
     assert.equal(await page.evaluate(()=>typeof require),'undefined');
     assert.equal(await page.evaluate(()=>typeof window.tapnova.command),'function');

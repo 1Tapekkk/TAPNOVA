@@ -84,9 +84,17 @@ function displayLicense(state){
   if(!state?.phase)return;
   const gate=document.querySelector('#license-gate');
   const messages={locked:'Wprowadź kod aktywacyjny otrzymany od twórcy.',unconfigured:'To wydanie nie ma skonfigurowanego serwera licencji. Skontaktuj się z twórcą.',checking:'Aktywowanie…',offline:'Brak połączenia z serwerem licencji. Dostęp zostanie przywrócony po ponownej weryfikacji.',revoked:'Ta licencja została zablokowana.',expired:'Licencja wygasła. Poproś twórcę o przedłużenie.','device-limit':'Osiągnięto limit urządzeń. Zwolnij poprzednie urządzenie lub poproś twórcę o reset.','invalid-key':'Nieprawidłowy kod aktywacyjny.',error:'Aktywacja nie powiodła się. Sprawdź połączenie i spróbuj ponownie.'};
+  Object.assign(messages,{'storage-loading':'Odczytywanie bezpiecznie zapisanej aktywacji… Jeśli system prosi o zgodę, odpowiedz w jego oknie.','storage-locked':'Na tym Macu jest zapisana aktywacja. Kliknij „Odczytaj zapisaną aktywację”, aby ją przywrócić.','storage-error':'Nie udało się odczytać lub bezpiecznie zapisać aktywacji. Dane nie zostały wyczyszczone. Ponów dostęp; jeśli problem trwa, skontaktuj się z pomocą.'});
   if(state.active){if(gate.open)gate.close();document.querySelector('#license-key').value='';}
   else {if(!gate.open)gate.showModal();document.querySelector('#license-message').textContent=messages[state.phase]||messages.locked;}
-  document.querySelector('#license-submit').disabled=['unconfigured','checking'].includes(state.phase);
+  const stored=['storage-loading','storage-locked','storage-error'].includes(state.phase),pending=['storage-loading','checking'].includes(state.phase);
+  document.querySelector('#keychain-help').hidden=api?.platform!=='darwin';
+  document.querySelector('#license-credentials').hidden=stored;
+  document.querySelector('#license-submit').hidden=stored;
+  document.querySelector('#license-submit').disabled=stored||state.phase==='unconfigured'||pending;
+  for(const name of ['#license-key','#license-device'])document.querySelector(name).disabled=stored||pending;
+  const retry=document.querySelector('#license-retry');retry.disabled=pending||state.phase==='unconfigured';
+  retry.textContent=state.phase==='storage-locked'?'Odczytaj zapisaną aktywację':state.phase==='storage-error'?'Ponów dostęp do zapisanej aktywacji':'Sprawdź połączenie ponownie';
   document.querySelector('#license-summary').textContent=state.active?(state.label+' · '+(state.expires?'ważna do '+new Date(state.expires).toLocaleString('pl-PL'):'bezterminowa')):'Licencja nieaktywna';
 }
 document.querySelector('#license-gate').addEventListener('cancel',event=>event.preventDefault());

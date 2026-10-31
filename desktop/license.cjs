@@ -1,8 +1,8 @@
 'use strict';
 const crypto=require('node:crypto');
 function createLicense({serverUrl,fetch,storage,platform,notify=()=>{},now=()=>Date.now(),test=false}) {
-  let saved=null,active=false,expires=0,busy=false,timer,stopped=false;
-  let state={phase:test?'active':serverUrl?'locked':'unconfigured',label:'',expires:null};
+  let saved=null,active=false,expires=0,busy=false,timer,stopped=false,storageReady=false,needsWrite=false,startPromise;
+  let state={phase:test?'active':serverUrl?'storage-loading':'unconfigured',label:'',expires:null};
   if(test)active=true;
   const publish=s=>{state={...state,...s};notify(snapshot());return snapshot()};
   const snapshot=()=>({...state,active:active&&(test||now()<expires)});
@@ -14,42 +14,68 @@ function createLicense({serverUrl,fetch,storage,platform,notify=()=>{},now=()=>D
   };
   const accept=result=>{active=true;expires=now()+24000;publish({phase:'active',label:result.license.label,expires:result.license.expires})};
   async function heartbeat(){
-    if(stopped||test||busy||!saved?.token)return snapshot();busy=true;
+    if(stopped||test||busy||!storageReady||needsWrite||!saved?.token)return snapshot();busy=true;
     try {const result=await request('/api/heartbeat',{deviceId:saved.deviceId},saved.token);if(!stopped)accept(result)}
     catch(error){active=false;publish({phase:error.message==='revoked'?'revoked':error.message==='expired'?'expired':error.message==='activation-required'?'locked':'offline'})}
     finally{busy=false}
     return snapshot();
   }
+  async function restore(){
+    if(stopped||test||busy||!serverUrl)return snapshot();busy=true;active=false;publish({phase:'storage-loading'});
+    try {
+      if(needsWrite){await storage.write(saved);needsWrite=false}
+      else {try{saved=await storage.read()}catch(e){if(e.code==='ENOENT')saved=null;else throw e}}
+      storageReady=true;publish({phase:'locked'});
+    }catch{storageReady=false;publish({phase:'storage-error'})}
+    finally{busy=false}
+    if(storageReady&&saved?.token)await heartbeat();
+    return snapshot();
+  }
   return {
     snapshot,isActive:()=>snapshot().active,
-    async start(){
-      if(test||!serverUrl)return snapshot();
-      try{saved=await storage.read()}catch{saved=null}
-      if(saved?.token)await heartbeat();
-      timer=setInterval(()=>{if(active&&now()>=expires){active=false;publish({phase:'offline'})}void heartbeat()},15000);timer.unref?.();return snapshot();
+    start(){
+      if(startPromise)return startPromise;
+      startPromise=(async()=>{
+        if(test||!serverUrl||stopped)return snapshot();
+        try {
+          // Check only the file's existence before showing the macOS explanation.
+          // Keychain access happens after the user explicitly requests a restore.
+          if(platform==='darwin'&&storage.hasData&&await storage.hasData())publish({phase:'storage-locked'});
+          else await restore();
+        }catch{publish({phase:'storage-error'})}
+        if(!stopped){timer=setInterval(()=>{if(active&&now()>=expires){active=false;publish({phase:'offline'})}void heartbeat()},15000);timer.unref?.()}
+        return snapshot();
+      })();return startPromise;
     },
     async activate(key,deviceLabel){
-      if(test||busy||!serverUrl||stopped)return snapshot();busy=true;active=false;publish({phase:'checking'});
+      if(test||busy||!serverUrl||stopped||!storageReady||needsWrite)return snapshot();busy=true;active=false;publish({phase:'checking'});
       try {
         if(typeof key!=='string'||key.length>100||typeof deviceLabel!=='string'||!deviceLabel.trim()||deviceLabel.length>80)throw Error('invalid-input');
         const deviceId=saved?.deviceId||crypto.randomUUID();
-        saved={deviceId,token:saved?.token||''};await storage.write(saved);
+        saved={deviceId,token:saved?.token||''};needsWrite=true;await storage.write(saved);needsWrite=false;
         const result=await request('/api/activate',{key:key.trim(),deviceId,label:deviceLabel.trim(),platform});
-        saved={deviceId,token:result.token};await storage.write(saved);if(!stopped)accept(result);
-      }catch(error){active=false;publish({phase:['device-limit','invalid-key','revoked','expired'].includes(error.message)?error.message:'error'})}
+        saved={deviceId,token:result.token};needsWrite=true;await storage.write(saved);needsWrite=false;if(!stopped)accept(result);
+      }catch(error){active=false;publish({phase:needsWrite?'storage-error':['device-limit','invalid-key','revoked','expired'].includes(error.message)?error.message:'error'})}
       finally{busy=false}
       return snapshot();
     },
     heartbeat,
-    async deactivate(){if(busy)return snapshot();busy=true;active=false;try{if(saved?.token)await request('/api/deactivate',{deviceId:saved.deviceId},saved.token);await storage.clear();saved=null;publish({phase:'locked',label:'',expires:null})}catch{publish({phase:'error'})}finally{busy=false}return snapshot()},
+    refresh:()=>!storageReady||needsWrite?restore():heartbeat(),
+    async deactivate(){if(busy||!storageReady||needsWrite)return snapshot();busy=true;active=false;try{if(saved?.token)await request('/api/deactivate',{deviceId:saved.deviceId},saved.token);await storage.clear();saved=null;publish({phase:'locked',label:'',expires:null})}catch{publish({phase:'error'})}finally{busy=false}return snapshot()},
     stop(){stopped=true;clearInterval(timer)}
   };
 }
 function encryptedStorage({safeStorage,file}) {
-  const fs=require('node:fs/promises');
+  const fs=require('node:fs/promises'),path=require('node:path');
+  const available=async()=>{if(!await safeStorage.isAsyncEncryptionAvailable())throw Error('storage')};
   return {
-    async read(){if(!safeStorage.isEncryptionAvailable())throw Error('storage');const value=JSON.parse(safeStorage.decryptString(await fs.readFile(file)));if(typeof value.token!=='string'||typeof value.deviceId!=='string')throw Error('storage');return value},
-    async write(value){if(!safeStorage.isEncryptionAvailable())throw Error('storage');await fs.writeFile(file,safeStorage.encryptString(JSON.stringify(value)),{mode:0o600})},
+    async hasData(){try{return (await fs.stat(file)).isFile()}catch(e){if(e.code==='ENOENT')return false;throw e}},
+    async read(){const encrypted=await fs.readFile(file);await available();const decoded=await safeStorage.decryptStringAsync(encrypted);const value=JSON.parse(decoded.result);if(typeof value.token!=='string'||typeof value.deviceId!=='string'||!value.deviceId)throw Error('storage');if(decoded.shouldReEncrypt)await this.write(value);return value},
+    async write(value){
+      await available();const encrypted=await safeStorage.encryptStringAsync(JSON.stringify(value));
+      await fs.mkdir(path.dirname(file),{recursive:true});const temporary=file+'.'+crypto.randomUUID()+'.tmp';
+      try{await fs.writeFile(temporary,encrypted,{mode:0o600,flag:'wx'});await fs.rename(temporary,file)}finally{await fs.rm(temporary,{force:true})}
+    },
     async clear(){await fs.rm(file,{force:true})}
   };
 }

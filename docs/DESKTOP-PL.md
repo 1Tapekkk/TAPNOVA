@@ -4,7 +4,7 @@ created by 1TapGod
 
 ## Uruchomienie
 
-- Windows x64: uruchom `TAPNOVA-4.2.0-win-x64.exe`, wybierz katalog instalacji i otwórz skrót „TAPNOVA 4”. Nie potrzebujesz .NET ani WebView2 — przeglądarka jest w paczce.
+- Windows x64: uruchom instalator `TAPNOVA-<wersja>-win-x64.exe`, wybierz katalog instalacji i otwórz skrót „TAPNOVA 4”. Nie potrzebujesz .NET ani WebView2 — przeglądarka jest w paczce.
 - macOS: wybierz paczkę `arm64` dla Apple Silicon (M1 i nowsze) lub `x64` dla Intela. Otwórz DMG i przeciągnij TAPNOVA do Applications albo rozpakuj ZIP i przenieś TAPNOVA.app do Applications.
   Wymagany macOS 13 Ventura lub nowszy. Wydanie z GitHub Actions buduje i sprawdza paczki osobno na Macach Intel i Apple Silicon.
 - Przy pierwszym uruchomieniu wprowadź kod licencyjny otrzymany od twórcy i nazwę tego urządzenia. Wymagane jest połączenie z serwerem licencji. Następnie kliknij „Otwórz grę”, zaloguj się w MSP2 i wybierz narzędzie.
@@ -12,6 +12,22 @@ created by 1TapGod
 - Przycisk STOP w panelu zatrzymuje aktywne zadania. Nie cofa operacji przyjętych wcześniej przez serwer gry.
 
 ## Aktualizacje w aplikacji
+
+### Hasło „TAPNOVA Safe Storage” na Macu
+
+To pytanie systemu macOS o dostęp do klucza szyfrującego zapisaną aktywację. Chodzi o hasło pęku kluczy **Logowanie** — zwykle takie samo jak hasło używane do zalogowania na tym Macu. Nie wpisuj kodu licencyjnego, hasła MSP2 ani hasła panelu administratora. Jeśli korzystasz z komputera koleżanki, chodzi o hasło jej konta na Macu, a nie Twoje.
+
+Wpisz hasło tylko w oknie systemowym: **Pozwól** zezwala na tę operację, **Zawsze pozwalaj** zapamiętuje zgodę aplikacji, a **Zabroń** odmawia dostępu. TAPNOVA nie otrzymuje hasła wpisanego do systemowego okna. Przechowuje zaszyfrowany token aktywacji i losowy identyfikator urządzenia, nie hasło Maca czy konta gry.
+
+Od 4.2.4 aplikacja najpierw pokazuje swoje okno i wyjaśnienie. Jeżeli na Macu jest już zapisana aktywacja, kliknij **Odczytaj zapisaną aktywację**. Po odmowie wybierz **Ponów dostęp do zapisanej aktywacji**; nie trzeba wpisywać kodu ponownie ani resetować limitu urządzeń. Odczyt i zapis korzystają z asynchronicznej obsługi magazynu systemowego. Odmowa lub błąd zapisu nie usuwa istniejącego pliku aktywacji.
+
+Jeśli obecne hasło konta nie pasuje, hasło pęku kluczy mogło pozostać poprzednie po zmianie hasła Maca. Nie resetuj ani nie usuwaj całego pęku kluczy tylko z powodu tego okna. Najpierw sprawdź instrukcję Apple lub poproś właściciela Maca o pomoc.
+
+Obecne wydania macOS są podpisane ad-hoc, bez certyfikatu Developer ID. System może ponownie poprosić o zgodę po aktualizacji nawet po wybraniu „Zawsze pozwalaj”. Stabilna tożsamość podpisanych wydań wymaga certyfikatu Apple Developer.
+
+Źródła: [Apple — dostęp do pęku kluczy](https://support.apple.com/en-gb/guide/mac-help/kychn002/26/mac/26), [Apple — hasło pęku kluczy](https://support.apple.com/en-gb/guide/keychain-access/kyca2429/mac), [Electron — safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage).
+
+### Pobieranie nowej wersji
 
 Wersję 4.2.0 zainstaluj ręcznie jeden raz. Wydania 4.1.0 i starsze nie mają
 mechanizmu aktualizacji. Od 4.2.0 aplikacja sprawdza nowe wydania po uruchomieniu;

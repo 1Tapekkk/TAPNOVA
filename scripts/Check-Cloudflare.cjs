@@ -23,6 +23,7 @@ async function main(){
   const post=(route,data,headers={})=>fetch(origin+route,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(data)});
   assert.equal((await fetch(origin+'/health')).status,200);
   assert.equal((await fetch(origin+'/api/admin/licenses')).status,401);
+  for(const route of ['channel','draft'])assert.equal((await fetch(origin+'/api/admin/discord/'+route+'?id=test')).status,401);
   assert.equal((await post('/api/admin/login',{proof})).status,403);
   const headers={origin,'x-tapnova-admin':'1'};
   assert.equal((await post('/api/admin/discord/commands',{})).status,403);

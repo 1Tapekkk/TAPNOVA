@@ -75,8 +75,36 @@ export async function composerModal(env,i){
 }
 async function api(env,path,method='GET',payload,form){
  const r=await fetch(API+path,{method,headers:{authorization:`Bot ${env.DISCORD_BOT_TOKEN}`,'user-agent':UA,...(!form?{'content-type':'application/json'}:{})},...(form?{body:form}:payload?{body:JSON.stringify(payload)}:{}),signal:AbortSignal.timeout(7000)});
- if(!r.ok)throw Object.assign(Error('discord'),{discordStatus:r.status});
+ if(!r.ok){
+  let data;try{data=await r.json()}catch{}
+  const fields=[];
+  const walk=(node,path='',depth=0)=>{
+   if(!node||typeof node!=='object'||depth>8||fields.length>=8)return;
+   if(Array.isArray(node._errors))for(const error of node._errors.slice(0,3))if(/^[A-Z0-9_]{1,60}$/.test(error.code||''))fields.push((path||'request')+':'+error.code);
+   for(const key of Object.keys(node))if(key!=='_errors'&&/^[a-z_0-9]{1,40}$/.test(key))walk(node[key],path?path+'.'+key:key,depth+1);
+  };walk(data?.errors);
+  throw Object.assign(Error('discord'),{discordStatus:r.status,discordCode:Number.isSafeInteger(data?.code)?data.code:null,discordFields:fields});
+ }
  return r.status===204?null:r.json();
+}
+export async function inspectDiscordChannel(env,channelId){
+ await channel(env,channelId);
+ const [c,roles,member]=await Promise.all([api(env,`/channels/${channelId}`),api(env,`/guilds/${env.DISCORD_GUILD_ID}/roles`),api(env,`/guilds/${env.DISCORD_GUILD_ID}/members/${env.DISCORD_APPLICATION_ID}`)]);
+ const selected=new Set([env.DISCORD_GUILD_ID,...member.roles]);
+ let permissions=roles.filter(r=>selected.has(r.id)).reduce((p,r)=>p|BigInt(r.permissions),0n);
+ const administrator=!!(permissions&8n);
+ const apply=overrides=>{let allow=0n,deny=0n;for(const o of overrides){allow|=BigInt(o.allow);deny|=BigInt(o.deny)}permissions=(permissions&~deny)|allow};
+ if(!administrator){
+  apply((c.permission_overwrites||[]).filter(o=>o.id===env.DISCORD_GUILD_ID));
+  apply((c.permission_overwrites||[]).filter(o=>o.type===0&&o.id!==env.DISCORD_GUILD_ID&&selected.has(o.id)));
+  apply((c.permission_overwrites||[]).filter(o=>o.type===1&&o.id===env.DISCORD_APPLICATION_ID));
+ }
+ const bits={viewChannel:1024n,sendMessages:2048n,embedLinks:16384n,attachFiles:32768n,readHistory:65536n};
+ const checks=Object.fromEntries(Object.entries(bits).map(([key,bit])=>[key,administrator||!!(permissions&bit)]));
+ const timedOut=Date.parse(member.communication_disabled_until||'')>Date.now();
+ if(!checks.viewChannel||timedOut)checks.sendMessages=checks.embedLinks=checks.attachFiles=false;
+ if(!checks.sendMessages)checks.embedLinks=checks.attachFiles=false;
+ return {channelId,channelName:c.name,administrator,timedOut,permissions:checks};
 }
 async function channel(env,channelId){
  if(!id(channelId))fail('Wybierz kanał tekstowy na serwerze.');
@@ -148,12 +176,26 @@ async function saveDraft(env,i,draft,action){
  if(!saved)fail('Projekt został już zmieniony. Użyj najnowszego podglądu.');return preview(saved);
 }
 async function imageBytes(item){
- const r=await fetch(item.url,{redirect:'error',signal:AbortSignal.timeout(5000)});if(!r.ok)fail('Nie udało się pobrać zdjęcia. Wgraj je ponownie przez przycisk Zdjęcia.');
+ // Workers supports manual/follow only. Never follow a CDN redirect to an
+ // unvalidated host, but use manual instead of unsupported redirect:error.
+ const r=await fetch(item.url,{redirect:'manual',signal:AbortSignal.timeout(5000)});if(!r.ok)fail('Nie udało się pobrać zdjęcia. Wgraj je ponownie przez przycisk Zdjęcia.');
  const reader=r.body?.getReader();if(!reader)fail('Pusty plik zdjęcia.');let length=0;const chunks=[];
  try{while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>5*1024*1024){await reader.cancel();fail('Zdjęcie przekracza 5 MB.')}chunks.push(value)}}finally{reader.releaseLock()}
  const bytes=new Uint8Array(length);let offset=0;for(const c of chunks){bytes.set(c,offset);offset+=c.length}
  const signatures={ 'image/png':()=>bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71,'image/jpeg':()=>bytes[0]===255&&bytes[1]===216&&bytes[2]===255,'image/gif':()=>new TextDecoder().decode(bytes.slice(0,6)).match(/^GIF8[79]a$/),'image/webp':()=>new TextDecoder().decode(bytes.slice(0,4))==='RIFF'&&new TextDecoder().decode(bytes.slice(8,12))==='WEBP'};
  if(!signatures[item.mime]?.())fail('Plik nie jest poprawnym obrazem PNG, JPG, GIF lub WebP.');return bytes;
+}
+export async function inspectDiscordDraft(env,draftId){
+ if(!/^[a-f0-9-]{36}$/.test(draftId||''))fail('Nieprawidłowy projekt.');
+ const draft=await q(env,'SELECT data FROM discord_drafts WHERE id=? AND guild_id=? AND owner_id=?',draftId,env.DISCORD_GUILD_ID,env.DISCORD_OWNER_ID).first();
+ if(!draft)fail('Nie znaleziono projektu.');
+ const data=JSON.parse(draft.data);
+ const images=await Promise.all(['image','thumbnail'].map(async key=>{
+  const item=data[key],start=Date.now();if(item?.kind!=='upload')return {key,skipped:true};
+  try{const bytes=await imageBytes(item);return {key,bytes:bytes.length,ms:Date.now()-start,ok:true}}
+  catch(e){return {key,ok:false,ms:Date.now()-start,name:e.name,detail:String(e.message).replace(/https?:\/\/\S+/g,'[url]').slice(0,200)}}
+ }));
+ return {images};
 }
 async function publish(env,draft){
  const locked=await q(env,"UPDATE discord_drafts SET state='publishing' WHERE id=? AND state='draft' AND revision=? RETURNING id",draft.id,draft.revision).first();if(!locked)fail('Ten projekt jest już publikowany lub został zmieniony.');
@@ -178,9 +220,18 @@ async function publish(env,draft){
   const safe=!attempted||[400,401,403,404,429].includes(e.discordStatus);
   // A delivered Discord message must never be described as unpublished because
   // the subsequent database write failed. Keep the claim locked on DB failure.
-  try{await q(env,'UPDATE discord_drafts SET state=? WHERE id=?',safe?'draft':draft.message_id?'cancelled':'uncertain',draft.id).run()}catch{}
+  const diagnostic={http:e.discordStatus||null,code:e.discordCode||null,fields:e.discordFields||[],name:e.name,stage:attempted?'send':'prepare',...(e.composer?{detail:e.message}:{})};
+  try{await q(env,'UPDATE discord_drafts SET state=?,last_error=? WHERE id=?',safe?'draft':draft.message_id?'cancelled':'uncertain',JSON.stringify(diagnostic),draft.id).run()}catch{}
   if(e.composer)throw e;
-  if(safe)fail(e.discordStatus===429?'Discord ograniczył liczbę zapytań. Odczekaj chwilę i użyj ponownie przycisku publikacji.':'Nie opublikowano. Sprawdź kanał i uprawnienia bota: wyświetlanie kanału, wysyłanie wiadomości, osadzanie linków, załączniki i historia wiadomości.');
+  if(safe){
+   const reference=` [HTTP ${e.discordStatus||'?'}${e.discordCode?' / '+e.discordCode:''}]`;
+   if(e.discordStatus===400)fail('Discord odrzucił format wiadomości lub załącznika.'+reference+(e.discordFields?.length?' Pole: '+e.discordFields.join(', '):'')+' Podgląd zachowany; popraw dane i spróbuj ponownie.');
+   if(e.discordStatus===401)fail('Discord odrzucił token bota. Właściciel musi odnowić połączenie.'+reference);
+   if(e.discordStatus===403)fail('Discord odmówił dostępu na tym kanale. Sprawdź uprawnienia kanału i kategorii dla bota: wysyłanie wiadomości, osadzanie linków i załączniki.'+reference);
+   if(e.discordStatus===404)fail('Nie znaleziono kanału lub edytowanej wiadomości. Wybierz aktualny kanał albo link.'+reference);
+   if(e.discordStatus===429)fail('Discord ograniczył liczbę zapytań. Odczekaj chwilę i użyj ponownie przycisku publikacji.'+reference);
+   fail('Nie rozpoczęto publikacji. Nie udało się przygotować wiadomości. Podgląd zachowany.');
+  }
   fail('Nie mogę potwierdzić zapisu. Sprawdź kanał przed kolejną publikacją, aby nie utworzyć duplikatu.'+(message?.id?` Link: https://discord.com/channels/${env.DISCORD_GUILD_ID}/${draft.channel_id}/${message.id}`:''));
  }
 }

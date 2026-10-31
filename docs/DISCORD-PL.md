@@ -76,6 +76,12 @@ Publikować i edytować może wyłącznie skonfigurowany właściciel. Bot potrz
 
 Szablon konkursu jest ogłoszeniem — nie zbiera zgłoszeń ani nie losuje zwycięzców. Przycisk Kup podaje kontakt do właściciela lub otwiera ustawiony link; nie realizuje płatności. W cenniku uzupełnij ceny przed publikacją. W razie niepewnego wyniku API bot prosi o sprawdzenie kanału, zamiast automatycznie wysyłać duplikat.
 
+## Diagnozowanie publikacji
+
+Błąd publikacji wskazuje teraz kod HTTP, kod Discorda i — gdy Discord je poda — nazwy odrzuconych pól. Błąd pobrania zdjęcia nie jest opisywany jako brak uprawnień. Przy odrzuceniu wiadomości przed publikacją projekt pozostaje dostępny do poprawienia; przy niepewnym wyniku wysyłania najpierw sprawdź kanał.
+
+Na komputerze właściciela z istniejącą konfiguracją Cloudflare polecenie `node scripts/Inspect-Discord.cjs ID_KANALU` sprawdza efektywne uprawnienia bota, a `node scripts/Inspect-Discord.cjs UUID_PROJEKTU --draft` sprawdza pobranie zdjęć. Nie publikują wiadomości. Dostęp wymaga konta Cloudflare właściciela i lokalnej konfiguracji; token bota pozostaje na serwerze. Diagnostyka nie wypisuje podpisanych adresów załączników ani treści wiadomości.
+
 ## Wdrażanie nowych komend
 
 Po wdrożeniu zmian przez `pnpm cloudflare:deploy` uruchom `pnpm discord:register`. Polecenie używa istniejącego dostępu właściciela do Cloudflare i krótkiej sesji administracyjnej, usuwanej po operacji. Token bota pozostaje w sekretach Workera; nie trzeba wpisywać go ponownie. Endpoint rejestracji wymaga sesji administratora i ochrony CSRF. Aktualizowane są wyłącznie komendy TAPNOVA, bez usuwania innych komend aplikacji.
@@ -95,5 +101,7 @@ Po wdrożeniu zmian przez `pnpm cloudflare:deploy` uruchom `pnpm discord:registe
 ## Sprawdzenie działania
 
 `pnpm test:discord` testuje podpisy Discorda, uprawnienia właściciela, izolację serwera, rzeczywistą bazę D1 w lokalnym Workers, idempotencję operacji, powiązania, aktywację, przedłużenie, blokowanie, odbieranie ról po usunięciu licencji, błędy API i ograniczanie prób. Wywołania Discord REST są w testach zastąpione kontrolowanymi odpowiedziami. `pnpm test:cloudflare` sprawdza dodatkowo dotychczasowy serwer i panel licencji.
+
+Test kreatora uruchamiany jest też we właściwym środowisku Workers: pobiera dwa testowe obrazy, sprawdza wysłane dane multipart i odrzucenie przekierowania CDN bez odwiedzania jego celu. Wykrywa różnice między `fetch` w Node.js a Cloudflare, które wcześniej powodowały awarię załączników.
 
 Źródła: [Discord — hosting na Workers](https://docs.discord.com/developers/tutorials/hosting-on-cloudflare-workers), [interakcje i podpisy](https://docs.discord.com/developers/interactions/receiving-and-responding), [konfiguracja aplikacji](https://docs.discord.com/developers/resources/application), [limity Cloudflare](https://developers.cloudflare.com/workers/platform/limits/).

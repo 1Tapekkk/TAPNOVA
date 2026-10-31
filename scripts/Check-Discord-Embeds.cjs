@@ -2,16 +2,19 @@
 const assert=require('node:assert/strict');
 module.exports=async function checkEmbeds({env,DB,send,command,options,calls}){
  const savedFetch=global.fetch,channel='777777777777777777',outsider='888888888888888888',attachmentId='999999999999999999';
- const messages=new Map(),publicWrites=[],uploads=[];let serial=900000000000000000n,failure=null,foreign=false;
+ const messages=new Map(),publicWrites=[],uploads=[];let serial=900000000000000000n,failure=null,foreign=false,failureBody={};
+ const roleId='123456789123456789';let rolePermissions='117760',overwrites=[];
  global.fetch=async(url,init={})=>{
   const href=String(url);
   if(href.startsWith('https://cdn.discordapp.com/ephemeral-attachments/')){uploads.push(href);return new Response(new Uint8Array([137,80,78,71,13,10,26,10]));}
+  if(href.endsWith('/roles'))return Response.json([{id:env.DISCORD_GUILD_ID,permissions:'0'},{id:roleId,permissions:rolePermissions}]);
+  if(href.endsWith('/members/'+env.DISCORD_APPLICATION_ID))return Response.json({roles:[roleId]});
   if(href.includes('/channels/')){
    const messageId=href.match(/\/messages\/(\d+)$/)?.[1];
-   if(!href.includes('/messages'))return Response.json({id:channel,guild_id:foreign?outsider:env.DISCORD_GUILD_ID,type:0});
+   if(!href.includes('/messages'))return Response.json({id:channel,guild_id:foreign?outsider:env.DISCORD_GUILD_ID,type:0,permission_overwrites:overwrites});
    if((init.method||'GET')==='GET')return Response.json(messages.get(messageId));
    publicWrites.push({url:href,method:init.method,body:init.body});
-   if(failure==='network')throw Error('lost response');if(failure)return new Response('{}',{status:failure});
+   if(failure==='network')throw Error('lost response');if(failure)return Response.json(failureBody,{status:failure});
    const form=init.body instanceof FormData,payload=JSON.parse(form?init.body.get('payload_json'):init.body);
    assert.deepEqual(payload.allowed_mentions,{parse:[]});
    if(form)assert.ok(init.body.get('files[0]') instanceof Blob);
@@ -28,6 +31,15 @@ module.exports=async function checkEmbeds({env,DB,send,command,options,calls}){
  const button=(preview,action)=>preview.components[0].components.find(c=>c.custom_id.startsWith('tnc:'+action+':')).custom_id;
  const save=(custom_id,values)=>({...component(custom_id),type:5,data:{custom_id,components:Object.entries(values).map(([key,value])=>({type:18,component:{type:4,custom_id:key,value}}))}});
  try{
+  const {inspectDiscordChannel}=await import('../license-server/cloudflare/discord-composer.mjs');
+  assert.ok(Object.values((await inspectDiscordChannel(env,channel)).permissions).every(Boolean));
+  overwrites=[{id:roleId,type:0,deny:'2048',allow:'0'}];
+  let check=await inspectDiscordChannel(env,channel);assert.equal(check.permissions.sendMessages,false);assert.equal(check.permissions.attachFiles,false);
+  overwrites.push({id:env.DISCORD_APPLICATION_ID,type:1,deny:'0',allow:'2048'});
+  assert.equal((await inspectDiscordChannel(env,channel)).permissions.sendMessages,true);
+  rolePermissions='8';overwrites=[{id:roleId,type:0,deny:'117760',allow:'0'}];
+  check=await inspectDiscordChannel(env,channel);assert.equal(check.administrator,true);assert.ok(Object.values(check.permissions).every(Boolean));
+  rolePermissions='117760';overwrites=[];
   assert.match((await send(command('embed',outsider))).body.data.content,/wyłącznie/);
   const create=owner('embed',{szablon:'cennik'});const initial=await send(create);
   assert.equal(initial.body.type,5);assert.equal(initial.body.data.flags,64);assert.equal(publicWrites.length,0);
@@ -61,8 +73,12 @@ module.exports=async function checkEmbeds({env,DB,send,command,options,calls}){
   await send(component(button(last(),'cancel')));
   const bad=owner('embed',{zdjecie:attachmentId});bad.data.resolved={attachments:{[attachmentId]:{...data,url:'https://localhost/secrets'}}};await send(bad);assert.match(last().content,/załącznik Discorda/);
   foreign=true;await send(owner('embed'));assert.match(last().content,/serwerze TAPNOVA/);foreign=false;
-  await send(owner('panel-aktywacji'));preview=last();const retry=button(preview,'publish');failure=403;await send(component(retry));assert.match(last().content,/Nie opublikowano/);
+  await send(owner('panel-aktywacji'));preview=last();const retry=button(preview,'publish');failure=403;await send(component(retry));assert.match(last().content,/HTTP 403/);
   failure=null;await send(component(retry));assert.match(last().content,/Opublikowano/);
+  await send(owner('embed'));preview=last();const invalid=button(preview,'publish');failure=400;failureBody={code:50035,errors:{embeds:{0:{image:{url:{_errors:[{code:'URL_TYPE_INVALID_URL',message:'PRIVATE_SECRET_SHOULD_NOT_APPEAR'}]}}}}}};
+  await send(component(invalid));assert.match(last().content,/HTTP 400 \/ 50035/);assert.match(last().content,/embeds\.0\.image\.url:URL_TYPE_INVALID_URL/);assert.ok(!last().content.includes('PRIVATE_SECRET'));
+  const errorRow=await DB.prepare('SELECT last_error FROM discord_drafts WHERE id=?').bind(invalid.split(':')[2]).first();assert.equal(JSON.parse(errorRow.last_error).code,50035);assert.ok(!errorRow.last_error.includes('PRIVATE_SECRET'));
+  failure=null;failureBody={};await send(component(invalid));assert.match(last().content,/Opublikowano/);
   await send(owner('embed'));preview=last();const ambiguous=button(preview,'publish');failure='network';await send(component(ambiguous));assert.match(last().content,/Nie mogę potwierdzić/);
   const count=publicWrites.length;failure=null;await send(component(ambiguous));assert.equal(publicWrites.length,count);assert.match(last().content,/Nie wysyłam go ponownie/);
   assert.equal((await DB.prepare("SELECT COUNT(*) AS n FROM discord_drafts WHERE state='uncertain'").first()).n,1);

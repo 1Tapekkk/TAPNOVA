@@ -1,6 +1,7 @@
 import {createStore,fail} from './store.mjs';
 import {random,sha,hasher,equal} from './crypto.mjs';
 import {discordFetch,syncDiscord,registerDiscordCommands} from './discord.mjs';
+import {inspectDiscordChannel,inspectDiscordDraft} from './discord-composer.mjs';
 const security={
   'cache-control':'no-store', 'x-content-type-options':'nosniff', 'referrer-policy':'no-referrer',
   'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
@@ -47,6 +48,8 @@ export default {
         const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),env.ADMIN_VERIFIER).first();
         if(!session)fail('login',401);
         if(path==='/api/admin/discord/commands'&&post){await body(request);return json(await registerDiscordCommands(env))}
+        if(path==='/api/admin/discord/channel'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'admin-channel-inspection');return json(await inspectDiscordChannel(env,url.searchParams.get('id')))}
+        if(path==='/api/admin/discord/draft'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'admin-draft-inspection');return json(await inspectDiscordDraft(env,url.searchParams.get('id')))}
         if(path==='/api/admin/logout'&&post){await body(request);await env.DB.prepare('DELETE FROM admin_sessions WHERE token_hash=?').bind(th).run();return json({ok:true},200,{'set-cookie':cookie('',url.protocol==='https:')})}
         const store=await createStore(env.DB,env.LICENSE_SECRET);
         if(path==='/api/admin/licenses'&&request.method==='GET')return json(await store.list());

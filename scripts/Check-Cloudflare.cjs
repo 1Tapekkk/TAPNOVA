@@ -25,6 +25,8 @@ async function main(){
   assert.equal((await fetch(origin+'/api/admin/licenses')).status,401);
   assert.equal((await post('/api/admin/login',{proof})).status,403);
   const headers={origin,'x-tapnova-admin':'1'};
+  assert.equal((await post('/api/admin/discord/commands',{})).status,403);
+  assert.equal((await post('/api/admin/discord/commands',{},headers)).status,401);
   assert.equal((await post('/api/admin/login',{proof:'0'.repeat(64)},headers)).status,401);
   const login=await post('/api/admin/login',{proof},headers);assert.equal(login.status,200,await login.text());
   assert.match(login.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/);headers.cookie=login.headers.get('set-cookie').split(';')[0];

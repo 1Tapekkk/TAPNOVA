@@ -53,6 +53,7 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
 document.querySelector('[data-photo]').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('photo')}finally{button.disabled=false}});
 document.querySelector('[data-reload]').addEventListener('click',()=>command('reload'));
 document.querySelector('#clear-data').addEventListener('click',()=>command('clear-data'));
+document.querySelector('#diagnostics-export').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('diagnostics-export')}finally{button.disabled=false}});
 api?.onStatus(displayStatus);
 if(api) command('status').then(value=>{if(value?.text)displayStatus(value);});
 let updateState={phase:'idle',automatic:api?.platform==='win32'};
@@ -89,7 +90,7 @@ function displayLicense(state){
   document.querySelector('#license-summary').textContent=state.active?(state.label+' · '+(state.expires?'ważna do '+new Date(state.expires).toLocaleString('pl-PL'):'bezterminowa')):'Licencja nieaktywna';
 }
 document.querySelector('#license-gate').addEventListener('cancel',event=>event.preventDefault());
-document.querySelector('#license-form').addEventListener('submit',async event=>{event.preventDefault();document.querySelector('#license-submit').disabled=true;displayLicense(await command('license-activate',{key:document.querySelector('#license-key').value,deviceLabel:document.querySelector('#license-device').value}));});
+document.querySelector('#license-form').addEventListener('submit',async event=>{event.preventDefault();document.querySelector('#license-submit').disabled=true;const result=await command('license-activate',{key:document.querySelector('#license-key').value,deviceLabel:document.querySelector('#license-device').value});displayLicense(result?.phase?result:{phase:'error',active:false});});
 document.querySelector('#license-retry').addEventListener('click',async()=>displayLicense(await command('license-refresh')));
 document.querySelector('#license-release').addEventListener('click',async()=>{if(confirm('Zwolnić to urządzenie? Gra zostanie zamknięta, a aplikacja poprosi o kod.'))displayLicense(await command('license-deactivate'));});
 api?.onLicense?.(displayLicense);

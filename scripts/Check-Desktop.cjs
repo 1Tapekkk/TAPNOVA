@@ -48,6 +48,12 @@ const root = path.resolve(__dirname,'..');
     await page.locator('.nav-item[data-page="help"]').click();await page.waitForSelector('#page-help:not([hidden])');
     assert.match(await page.locator('#page-help').innerText(),/Ctrl\+V/);
     await page.locator('.nav-item[data-page="settings"]').click();assert.ok(await page.locator('#clear-data').isVisible());
+    assert.ok(await page.locator('#diagnostics-export').isVisible());
+    await application.evaluate(({app,dialog})=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:app.getPath('userData')+'/diagnostics-test.json'})});
+    await page.locator('#diagnostics-export').click();
+    await page.waitForFunction(()=>document.querySelector('#status-text').textContent==='Raport diagnostyczny zapisany.');
+    const report=JSON.parse(fs.readFileSync(path.join(profile,'diagnostics-test.json'),'utf8'));
+    assert.ok(report.processes.length>0);assert.ok(report.events.some(row=>row.kind==='startup'));
     await page.locator('.nav-item[data-page="home"]').click();
     await page.locator('.hero [data-game]').click();
     assert.match(await page.locator('#status-text').innerText(),/offline/);
@@ -73,6 +79,12 @@ const root = path.resolve(__dirname,'..');
       const childInjected=child?await child.executeJavaScript('typeof window.__tapnovaUI'):null;
       await wc.loadURL('https://moviestarplanet2.com/reload');
       const reloaded=await wc.executeJavaScript('typeof window.__tapnovaUI');
+      await wc.executeJavaScript("window.dispatchEvent(new ErrorEvent('error',{error:new TypeError('private-secret-fixture'),lineno:321,colno:7}))");
+      const localFS=process.getBuiltinModule('fs/promises');let diagnosticText='';
+      for(let attempt=0;attempt<30;attempt++){
+        diagnosticText=await localFS.readFile(app.getPath('userData')+'/logs/diagnostics.jsonl','utf8').catch(()=>'');
+        if(diagnosticText.includes('321'))break;await new Promise(resolve=>setTimeout(resolve,100));
+      }
       const photoModule=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/package.json')('./desktop/photo.cjs');
       const main=BrowserWindow.getAllWindows()[0];
       main.showInactive();
@@ -81,7 +93,7 @@ const root = path.resolve(__dirname,'..');
       const photo=await photoModule.createPhotographer({wait:async()=>{}})({webContents:main.webContents,
         chooseFile:async()=>({filePath:'offline.png'}),writeFile:async(_file,bytes)=>{capturedBytes=bytes.length}});
       const restored=await main.webContents.executeJavaScript('getComputedStyle(window.__xbPanel).visibility');
-      return {result,packs,reloaded,childInjected,photo,capturedBytes,restored,preferences:wc.getLastWebPreferences()};
+      return {result,packs,reloaded,childInjected,photo,capturedBytes,restored,diagnosticText,throttling:wc.getBackgroundThrottling(),preferences:wc.getLastWebPreferences()};
     });
     assert.equal(integration.result.panel,true,JSON.stringify(integration));
     assert.equal(integration.photo.ok,true);assert.ok(integration.capturedBytes>100);assert.equal(integration.restored,'visible');
@@ -91,6 +103,8 @@ const root = path.resolve(__dirname,'..');
     assert.equal(integration.reloaded,'object');
     assert.equal(integration.childInjected,'object','Child game frames receive document-start injection');
     assert.equal(integration.preferences.sandbox,true);assert.equal(integration.preferences.nodeIntegration,false);assert.equal(integration.preferences.contextIsolation,true);
+    assert.equal(integration.throttling,true);
+    assert.ok(integration.diagnosticText.includes('321'));assert.ok(!integration.diagnosticText.includes('private-secret-fixture'));
     // Exercise the actual electron-updater transport against a loopback fixture.
     // Fake installers are checksum-tested, never executed; the real user profile is not used.
     const transport=await application.evaluate(async({app})=>{

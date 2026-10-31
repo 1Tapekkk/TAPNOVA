@@ -17,6 +17,11 @@ let license;
 app.setName('TAPNOVA');
 // A separate profile avoids corrupting or exporting the legacy WebView2 profile.
 app.setPath('userData', smoke ? path.join(require('node:os').tmpdir(),'tapnova-test-'+process.pid) : path.join(app.getPath('appData'),'TAPNOVA'));
+const diagnostics = require('./diagnostics.cjs').createDiagnostics(path.join(app.getPath('userData'),'logs'));
+diagnostics.record('startup',{source:'main'});
+process.on('uncaughtExceptionMonitor',error=>diagnostics.record('main-error',{name:error?.name,source:'main'}));
+process.on('unhandledRejection',error=>diagnostics.record('unhandled-rejection',{name:error?.name,source:'main'}));
+app.on('child-process-gone',(_event,details)=>diagnostics.record('child-gone',{reason:details.reason,code:details.exitCode,source:details.type}));
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
@@ -75,6 +80,7 @@ async function extensionMessage(event, message) {
   if (event.sender !== game?.webContents || !isGameURL(event.senderFrame?.url) || !message || typeof message !== 'object') return {ok:false};
   try {
     switch (message.type) {
+      case 'tapnova:diagnostic': diagnostics.record(message.kind,{name:message.name,line:message.line,column:message.column,source:'game',active:message.active,queued:message.queued}); return {ok:true};
       case 'xb:boot': return {ok:true,homes:[],questions:{},emojis:null,deferred:true};
       case 'xb:injectMain': return {ok:true}; // Installed at document start through CDP.
       case 'xb:catalog': {
@@ -135,7 +141,7 @@ async function createWindow() {
   if(!smoke)gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:/^(https?|wss?):/.test(details.url)&&!license.isActive()}));
   if (smoke) gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('data:')}));
   win = new BrowserWindow({width:1360,height:920,minWidth:960,minHeight:700,show:false,backgroundColor:'#101116',title:'TAPNOVA · created by 1TapGod',icon:path.join(__dirname,'generated/tapnova.png'),webPreferences:{preload:path.join(__dirname,'shell-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
-  game = new WebContentsView({webPreferences:{session:gameSession,contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
+  game = new WebContentsView({webPreferences:{session:gameSession,contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:true}});
   game.setBackgroundColor('#101116');
   game.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   game.webContents.on('will-navigate',(event,url)=>{ if (!isGameURL(url)) event.preventDefault(); });
@@ -143,8 +149,12 @@ async function createWindow() {
   game.webContents.on('will-frame-navigate',event=>{ if (event.isMainFrame && !isGameURL(event.url)) event.preventDefault(); });
   game.webContents.on('did-start-loading',()=>status('loading','Ładowanie gry…'));
   game.webContents.on('did-stop-loading',()=>{ if(loaded) status('ready','Gra otwarta · zaloguj się w MSP2'); });
-  game.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{ if (isMainFrame && code!==-3) { loaded=false; showGame(false); status('error','Brak połączenia z grą. Spróbuj ponownie.'); } });
-  game.webContents.on('render-process-gone',()=>{ loaded=false; showGame(false); status('error','Proces gry został zamknięty. Otwórz grę ponownie.'); });
+  game.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{ if (isMainFrame && code!==-3) { diagnostics.record('load-failed',{code,source:'game'}); loaded=false; showGame(false); status('error','Brak połączenia z grą. Spróbuj ponownie.'); } });
+  game.webContents.on('render-process-gone',(_event,details)=>{ diagnostics.record('renderer-gone',{source:'game',reason:details.reason,code:details.exitCode});loaded=false; showGame(false); status('error','Proces gry został zamknięty. Otwórz grę ponownie.'); });
+  for (const [source,wc] of [['game',game.webContents],['shell',win.webContents]]) {
+    wc.on('unresponsive',()=>{diagnostics.record('unresponsive',{source});status('error','Aplikacja czeka na odpowiedź. Możesz ponownie otworzyć grę.');});
+    wc.on('responsive',()=>{diagnostics.record('responsive',{source});status('ready','Aplikacja ponownie odpowiada.');});
+  }
   // Chromium injects into each new frame before the game's keyboard/network
   // handlers. Page JavaScript has no access to Electron or the debugger.
   // Materialize the renderer before issuing CDP commands to the new view.
@@ -173,6 +183,13 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
     case 'status': return lastStatus;
+    case 'diagnostics-export': {
+      const result=await dialog.showSaveDialog(win,{title:'Zapisz raport diagnostyczny TAPNOVA',defaultPath:path.join(app.getPath('documents'),'TAPNOVA-diagnostyka.json'),filters:[{name:'Raport JSON',extensions:['json']}]});
+      if(result.canceled||!result.filePath)return {ok:false,cancelled:true};
+      const processes=app.getAppMetrics().map(p=>({type:p.type,cpuPercent:p.cpu.percentCPUUsage,memoryKB:p.memory.workingSetSize}));
+      await fs.writeFile(result.filePath,await diagnostics.report({appVersion:app.getVersion(),platform:process.platform,arch:process.arch,processes}));
+      status('ready','Raport diagnostyczny zapisany.');return {ok:true};
+    }
     case 'update-status': return updates.snapshot();
     case 'update-check': return updates.check();
     case 'update-apply': return updates.apply();
@@ -207,5 +224,5 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   }
 });
 app.on('window-all-closed',()=>{ if(process.platform!=='darwin') app.quit(); });
-app.on('before-quit',()=>{updates?.stop();license?.stop()});
+app.on('before-quit',()=>{updates?.stop();license?.stop();void diagnostics.flush()});
 app.on('activate',()=>{ if(!win) createWindow().catch(error=>dialog.showErrorBox('TAPNOVA',error.message)); });

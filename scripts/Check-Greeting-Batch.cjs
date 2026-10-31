@@ -28,6 +28,13 @@ function fixture(responses = []) {
   assert.deepEqual(f.calls,[{type:'Autograph',id:'alice'},{type:'Autograph',id:'bob'}]);
   assert.deepEqual(f.waits,[0.25]);assert.equal(f.a.greetingAllProgress,2);
   assert.equal(f.notices.at(-1).kind,'success');assert.match(f.a.greetingAllSummary,/2\/2/);
+  f=fixture([{ok:true,wait:null},{ok:true,wait:null}]);
+  f.context.__xbResolveAutoWait=()=>{throw Error('Must not guess an hour-long batch cooldown')};
+  await f.run('Autograph',['alice','bob']);assert.deepEqual(f.waits,[0.25]);
+  f=fixture([{ok:false,status:429,reason:'HTTP 429',wait:4},{ok:true,wait:0},{ok:true,wait:0}]);
+  await f.run('HalloweenGreeting',['alice','bob']);assert.deepEqual(f.calls.map(x=>x.id),['alice','alice','bob']);assert.deepEqual(f.waits,[4,0.25]);
+  f=fixture([{ok:false,reason:'FailedReceiverNotFound'},{ok:true,wait:0}]);
+  await f.run('Autograph',['missing','bob']);assert.equal(f.calls.length,2);assert.equal(f.a.greetingAllErrors,1);assert.equal(f.a.greetingAllProgress,1);assert.match(f.a.greetingAllSummary,/Pozostało 0/);
   f=fixture([{ok:false,reason:'FailedCooldown',wait:12},{ok:true,wait:120},{ok:true,wait:120}]);
   await f.run('Autograph',['alice','bob']);
   assert.deepEqual(f.calls.map(x=>x.id),['alice','alice','bob'],'Cooldown must not skip the current recipient');

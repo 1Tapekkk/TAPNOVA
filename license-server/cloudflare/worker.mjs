@@ -1,5 +1,6 @@
 import {createStore,fail} from './store.mjs';
 import {random,sha,hasher,equal} from './crypto.mjs';
+import {discordFetch,syncDiscord,registerDiscordCommands} from './discord.mjs';
 const security={
   'cache-control':'no-store', 'x-content-type-options':'nosniff', 'referrer-policy':'no-referrer',
   'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
@@ -17,13 +18,14 @@ async function body(request){
 const cookie=(token,secure)=>`tn_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${token?43200:0}${secure?'; Secure':''}`;
 async function rate(binding,key){if(!binding)fail('not-configured',503);if(!(await binding.limit({key})).success)fail('rate-limit',429)}
 export default {
-  async fetch(request,env){
+  async fetch(request,env,ctx){
     try {
       const url=new URL(request.url),path=url.pathname,post=request.method==='POST';
       if(request.method==='GET'&&['/','/admin.js','/admin.css'].includes(path)){
         const asset=await env.ASSETS.fetch(request);const response=new Response(asset.body,asset);for(const[k,v]of Object.entries(security))response.headers.set(k,v);return response;
       }
       if(!/^[a-f0-9]{64}$/.test(env.LICENSE_SECRET||'')||!/^[a-f0-9]{64}$/.test(env.ADMIN_VERIFIER||'')||!/^[a-f0-9]{64}$/.test(env.ADMIN_SALT||''))fail('not-configured',503);
+      if(['/discord/interactions','/discord/health'].includes(path))return await discordFetch(request,env,ctx);
       if(path==='/health'&&request.method==='GET'){await env.DB.prepare('SELECT id FROM licenses LIMIT 1').all();return json({ok:true,service:'tapnova-licenses',storage:'d1'})}
       if(!path.startsWith('/api/'))return json({error:'not-found'},404);
       const ip=request.headers.get('CF-Connecting-IP')||'local';
@@ -44,6 +46,7 @@ export default {
         const th=token?await hash(token):'';
         const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),env.ADMIN_VERIFIER).first();
         if(!session)fail('login',401);
+        if(path==='/api/admin/discord/commands'&&post){await body(request);return json(await registerDiscordCommands(env))}
         if(path==='/api/admin/logout'&&post){await body(request);await env.DB.prepare('DELETE FROM admin_sessions WHERE token_hash=?').bind(th).run();return json({ok:true},200,{'set-cookie':cookie('',url.protocol==='https:')})}
         const store=await createStore(env.DB,env.LICENSE_SECRET);
         if(path==='/api/admin/licenses'&&request.method==='GET')return json(await store.list());
@@ -62,9 +65,11 @@ export default {
       return json({error:'not-found'},404);
     }catch(e){return json({error:e.status?e.message:'service-unavailable'},e.status||503)}
   },
-  async scheduled(_event,env){
+  async scheduled(event,env){
+    if(event.cron==='*/5 * * * *'){await syncDiscord(env);return}
     await env.DB.batch([
       env.DB.prepare('DELETE FROM admin_sessions WHERE expires<?').bind(Date.now()),
+      env.DB.prepare('DELETE FROM discord_drafts WHERE expires<?').bind(Date.now()-86400000),
       env.DB.prepare('DELETE FROM audit WHERE at<?').bind(Date.now()-90*86400000)
     ]);
   }

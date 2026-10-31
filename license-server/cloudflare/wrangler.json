@@ -10,8 +10,9 @@
   "ratelimits": [
     { "name": "LOGIN_LIMIT", "namespace_id": "421001", "simple": { "limit": 5, "period": 60 } },
     { "name": "ACTIVATION_LIMIT", "namespace_id": "421002", "simple": { "limit": 20, "period": 60 } },
-    { "name": "CLIENT_LIMIT", "namespace_id": "421003", "simple": { "limit": 600, "period": 60 } }
+    { "name": "CLIENT_LIMIT", "namespace_id": "421003", "simple": { "limit": 600, "period": 60 } },
+    { "name": "DISCORD_LIMIT", "namespace_id": "421004", "simple": { "limit": 10, "period": 60 } }
   ],
-  "triggers": { "crons": ["17 3 * * *"] },
+  "triggers": { "crons": ["17 3 * * *", "*/5 * * * *"] },
   "observability": { "enabled": false }
 }

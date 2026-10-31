@@ -1,6 +1,14 @@
 // Local preferences and cancellation for TAPNOVA. No game or account data is stored here.
 (() => {
   'use strict';
+  let diagnosticAt = 0, diagnosticCount = 0;
+  function diagnostic(kind, error, extra = {}) {
+    if (Date.now()-diagnosticAt > 60000) { diagnosticAt=Date.now();diagnosticCount=0; }
+    if (diagnosticCount++ >= 20) return;
+    try { window.postMessage({type:'tapnova:diagnostic',kind,name:String(error?.name || 'Error').slice(0,30),...extra},'*'); } catch {}
+  }
+  window.addEventListener?.('error',event=>diagnostic('game-error',event.error,{line:event.lineno,column:event.colno}));
+  window.addEventListener?.('unhandledrejection',event=>diagnostic('game-rejection',event.reason));
   const choices = values => ({ values });
   const number = (min, max) => ({ min, max });
   const schema = {
@@ -84,46 +92,90 @@
       import(raw) { const incoming = this.previewImport(raw); return write([...read(), ...incoming]); }
     };
   }
-  function createGate(request, initiallyPaused = false) {
+  function createGate(request, initiallyPaused = false, limits = {}) {
     let paused = initiallyPaused, epoch = 0;
     const requests = new Set(), delays = new Set(), jobs = new Set();
+    const queue = [];
+    const concurrency = Math.max(1, Math.min(12, limits.concurrency || 6));
+    const maxQueued = Math.max(1, Math.min(256, limits.maxQueued || 128));
+    const timeout = Math.max(10, Math.min(120000, limits.timeout || 30000));
+    let active = 0;
     const aborted = () => new DOMException('TAPNOVA: zatrzymano zadanie', 'AbortError');
+    const drain = () => {
+      while (!paused && active < concurrency && queue.length) queue.shift().start();
+    };
     return {
       get paused() { return paused; }, get epoch() { return epoch; },
       get pending() { return jobs.size + requests.size; },
+      get metrics() { return { active, queued: queue.length, jobs: jobs.size, concurrency }; },
       valid(version) { return !paused && version === epoch; },
       async run(name, action) {
         if (paused) throw aborted();
         const job = { name }; jobs.add(job);
         const history = window.__tapnovaExtras?.begin(name);
         try { const result=await action(); history?.finish(paused?'stopped':'finished'); return result; }
-        catch(error) { history?.finish(error?.name==='AbortError'?'stopped':'failed'); throw error; }
+        catch(error) { history?.finish(error?.name==='AbortError'?'stopped':'failed'); if(error?.name!=='AbortError')diagnostic('job-error',error); throw error; }
         finally { jobs.delete(job); }
       },
       async request(url, options = {}) {
         if (paused) throw aborted();
+        if (options.signal?.aborted) throw aborted();
+        if (active >= concurrency && queue.length >= maxQueued) throw new DOMException('TAPNOVA: kolejka żądań jest pełna', 'QuotaExceededError');
         const controller = new AbortController();
-        const relay = () => controller.abort();
-        if (options.signal?.aborted) controller.abort();
-        else options.signal?.addEventListener('abort', relay, { once: true });
+        const relay = () => controller.abort(aborted());
+        options.signal?.addEventListener('abort', relay, { once: true });
         requests.add(controller);
-        let readingBody = false;
-        const complete = () => { requests.delete(controller); options.signal?.removeEventListener('abort', relay); };
-        try {
-          const response = await request(url, { ...options, signal: controller.signal });
-          // Fetch resolves at headers. Keep cancellation alive until the response
-          // body finishes too, without changing the caller's Response or its API.
-          if (response.body && typeof response.clone === 'function') {
-            const reader = response.clone().body.getReader();
-            readingBody = true;
-            (async () => {
-              try { while (!(await reader.read()).done) { /* Discard observation chunks. */ } }
-              catch { /* Abort/errors are also delivered through the caller's body. */ }
-              finally { reader.releaseLock(); complete(); }
-            })();
-          }
-          return response;
-        } finally { if (!readingBody) complete(); }
+        return new Promise((resolve, reject) => {
+          let started = false, done = false, reader, streamController;
+          const complete = () => {
+            if (done) return;
+            done = true; clearTimeout(timer);
+            requests.delete(controller);
+            options.signal?.removeEventListener('abort', relay);
+            controller.signal.removeEventListener('abort', onAbort);
+            const index = queue.indexOf(entry);
+            if (index !== -1) queue.splice(index, 1);
+            if (started) active--;
+            drain();
+          };
+          const onAbort = () => {
+            const error = controller.signal.reason || aborted();
+            if(error.name!=='AbortError')diagnostic('request-error',error,{active,queued:queue.length});
+            try { streamController?.error(error); } catch {}
+            if (reader) reader.cancel(error).catch(() => {});
+            reject(error); complete();
+          };
+          const entry = { async start() {
+            if (done) return;
+            started = true; active++;
+            try {
+              const response = await request(url, { ...options, signal: controller.signal });
+              if (done) { response.body?.cancel().catch(() => {}); return; }
+              if (!response.body || typeof response.body.getReader !== 'function') { complete(); resolve(response); return; }
+              reader = response.body.getReader();
+              // Pull one stream only. Cloning and draining a second branch used to
+              // buffer entire unread responses and duplicate network processing.
+              const body = new ReadableStream({
+                start(value) { streamController = value; },
+                async pull(value) {
+                  try {
+                    const chunk = await reader.read();
+                    if (done) return;
+                    if (chunk.done) { value.close(); reader.releaseLock(); complete(); }
+                    else value.enqueue(chunk.value);
+                  } catch (error) { try { value.error(error); } catch {} complete(); }
+                },
+                cancel(reason) { const result = reader.cancel(reason); complete(); return result; }
+              }, { highWaterMark: 0 });
+              const wrapped = new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
+              for (const key of ['url', 'redirected', 'type']) Object.defineProperty(wrapped, key, { value: response[key] });
+              resolve(wrapped);
+            } catch (error) { if(error?.name!=='AbortError')diagnostic('request-error',error,{active,queued:queue.length});reject(error); complete(); }
+          } };
+          const timer = setTimeout(() => controller.abort(new DOMException('TAPNOVA: przekroczono czas żądania', 'TimeoutError')), timeout);
+          controller.signal.addEventListener('abort', onAbort, { once: true });
+          queue.push(entry); drain();
+        });
       },
       sleep(ms) {
         if (paused) return Promise.resolve();
@@ -134,7 +186,7 @@
       },
       stop() {
         paused = true; epoch++;
-        for (const controller of requests) controller.abort();
+        for (const controller of [...requests]) controller.abort(aborted());
         for (const finish of [...delays]) finish();
       },
       resume() {

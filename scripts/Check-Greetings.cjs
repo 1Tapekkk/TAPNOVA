@@ -11,5 +11,9 @@ const section=(from,to)=>source.slice(source.indexOf(from),source.indexOf(to,sou
  let result=await scope.__xbSendGreetingRetry('HalloweenGreeting','target');assert.equal(result.ok,true);assert.equal(result.wait,900);assert.equal(calls,1);
  response={data:{greetings:{sendGreeting:{success:false,error:{reason:'FailedDefinitionNotFound'}}}}};result=await scope.__xbSendGreetingRetry('HalloweenGreeting','target');assert.equal(result.ok,false);assert.equal(calls,2,'No repeated paid request after rejection');
  scope.cn=async()=>{calls++;throw Error('network-unknown')};await assert.rejects(()=>scope.__xbSendGreetingRetry('HalloweenGreeting','target'),/network-unknown/);assert.equal(calls,3,'No retry after ambiguous purchase outcome');
+ scope.cn=async()=>({ok:false,status:429,headers:new Headers({'retry-after':'12'}),body:new ReadableStream()});
+ result=await scope.Ls('HalloweenGreeting','target');assert.equal(result.status,429);assert.equal(result.wait,12);
+ scope.cn=async()=>({ok:false,status:429,headers:new Headers()});
+ result=await scope.Ls('HalloweenGreeting','target');assert.equal(result.wait,30);
  console.log('PASS: paid greeting cost/finite consent, exact outgoing type, daily-cap protection, server cooldown and no retry on paid failure. Live event identity is not verified by these offline tests.');
 })().catch(e=>{console.error(e);process.exitCode=1});

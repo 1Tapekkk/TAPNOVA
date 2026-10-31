@@ -250,16 +250,16 @@
   function sync() {
     if(!current||!current.panel.isConnected)return;
     const {context,panel,status,summary,stop,help,presets,host}=current;
-    const state=context.controls.activity();panel.dataset.tnPaused=String(state.paused);
+    const state=context.controls.activity();if(panel.dataset.tnPaused!==String(state.paused))panel.dataset.tnPaused=String(state.paused);
     const statusText=state.paused?tr('Narzędzia zatrzymane','Tools stopped'):state.items.length?tr('Aktywne funkcje: ','Active features: ')+state.items.length:tr('Gotowe. Ty decydujesz, co uruchomić.','Ready. You choose what to run.');
     if(status.textContent!==statusText)status.textContent=statusText;
     const detail=state.paused?(state.pending?tr('Kończenie przerwanych zadań…','Finishing cancelled tasks…'):tr('Możesz odblokować panel. Automatyzacje pozostaną wyłączone.','Unlock the panel when ready. Automation will remain off.')):state.items.map(id=>tr(...(activityNames[id]||operationNames[id.slice(3)]||['Zadanie w toku','Task in progress']))).join(' · ');
-    if(summary.textContent!==detail)summary.textContent=detail;summary.hidden=!detail;
+    if(summary.textContent!==detail)summary.textContent=detail;if(summary.hidden!==!detail)summary.hidden=!detail;
     const stopText=state.paused?(state.pending?tr('Zatrzymywanie…','Stopping…'):tr('Odblokuj narzędzia','Unlock tools')):tr('■ Zatrzymaj wszystko','■ Stop all');
-    if(stop.textContent!==stopText)stop.textContent=stopText;stop.disabled=state.paused&&state.pending>0;
-    help.setAttribute('aria-expanded',String(session.mode==='help'));presets.setAttribute('aria-expanded',String(session.mode==='presets'));
-    for(const [key,pane]of Object.entries(context.refs.panes||{}))pane.inert=state.paused&&key!=='settings'&&key!=='radar';
-    const fav=context.refs.body.querySelector('[data-panel-chrome="fav-bar"]');if(fav)fav.inert=state.paused;
+    if(stop.textContent!==stopText)stop.textContent=stopText;if(stop.disabled!==(state.paused&&state.pending>0))stop.disabled=state.paused&&state.pending>0;
+    for(const [node,expanded] of [[help,session.mode==='help'],[presets,session.mode==='presets']])if(node.getAttribute('aria-expanded')!==String(expanded))node.setAttribute('aria-expanded',String(expanded));
+    for(const [key,pane]of Object.entries(context.refs.panes||{})){const inert=state.paused&&key!=='settings'&&key!=='radar';if(pane.inert!==inert)pane.inert=inert;}
+    const fav=context.refs.body.querySelector('[data-panel-chrome="fav-bar"]');if(fav&&fav.inert!==state.paused)fav.inert=state.paused;
     host.querySelectorAll('[data-tnc-undo]').forEach(node=>node.disabled=!state.canUndo||state.items.length>0||state.pending>0);
     const apply=host.querySelector('[data-tnc-apply]');if(apply)apply.disabled=!session.preview||!differences(session.preview.settings).length||state.items.length>0||state.pending>0;
     const busy=host.querySelector('[data-tnc-busy]');if(busy)busy.textContent=state.items.length||state.pending?tr('Przed zastosowaniem zatrzymaj aktywne zadania przyciskiem u góry.','Stop active tasks using the button above before applying.'):' ';
@@ -283,7 +283,7 @@
     context.refs.tabBar.after(bar);context.refs.body.prepend(host);
     host.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();const mode=session.mode;session.mode=null;render();sync();(mode==='help'?help:presets).focus();}});
     render();queueMicrotask(sync);
-    timer=setInterval(()=>{if(!current?.panel.isConnected){clearInterval(timer);timer=null;return}sync()},400);
+    timer=setInterval(()=>{if(!current?.panel.isConnected){clearInterval(timer);timer=null;return}if(!document.hidden&&current.panel.style.display!=='none')sync()},1000);
   }
   window.__tapnovaCenter={mount,sync};
 })();

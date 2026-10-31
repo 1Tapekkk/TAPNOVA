@@ -18,7 +18,7 @@ const files=['locales-pl.js','control-core.js','control-center.js','workspace-to
    if(url.pathname==='/')return route.fulfill({contentType:'text/html',body:'<!doctype html><meta charset="utf-8"><body>'+files.map(f=>`<script src="/${f}"></script>`).join('')});
    const file=url.pathname.slice(1);if(!files.includes(file))return route.abort();
    let source=fs.readFileSync(path.join(root,'Resources/Extension',file),'utf8');
-   if(file==='app.js')source=source.replace('function tnText(value)','window.__batchTest={open:()=>{Us();Rs.style.display="flex"},render:Ns,get state(){return ce},buttons:()=>[...Pc.agFloatBody.querySelectorAll("button")]};function tnText(value)');
+   if(file==='app.js')source=source.replace('function tnText(value)','window.__batchTest={open:()=>{Us();Rs.style.display="flex"},render:Ns,get state(){return ce},body:()=>Pc.agFloatBody,buttons:()=>[...Pc.agFloatBody.querySelectorAll("button")]};function tnText(value)');
    return route.fulfill({contentType:'text/javascript',body:source});
   });
   await page.goto('https://tapnova-preview.invalid/');
@@ -44,6 +44,11 @@ const files=['locales-pl.js','control-core.js','control-center.js','workspace-to
   assert.match(confirmation,/2 Diax/);
   assert.deepEqual(calls.slice(2).map(x=>[x.greetingType,x.receiverProfileId]),[['HalloweenGreeting','alice'],['HalloweenGreeting','bob']]);
   assert.ok(calls.every(x=>x.ignoreDailyCap===false));assert.deepEqual(errors,[]);
+  const progress=()=>page.evaluate(()=>{const el=window.__batchTest.body().querySelector('progress');return {value:el?.value,max:el?.max,label:el?.getAttribute('aria-label')}});
+  assert.equal((await progress()).value,2);assert.equal((await progress()).label,'Postęp kolejki autografów');
+  await page.evaluate(()=>{const a=window.__batchTest.state.autographer;a.greetingAllTotal=100;a.greetingAllProgress=25;a.greetingAllErrors=5;a.greetingAllRunning=true;window.__batchTest.render()});
+  assert.equal((await progress()).value,30);assert.equal((await progress()).max,100);
+  assert.match(await page.evaluate(()=>window.__batchTest.body().textContent),/Pozostało 70.*Błędy 5/);
   await page.screenshot({path:path.join(root,'test-results/greeting-batch-4.2.2.png')});
   console.log('PASS: actual Send to all button sends normal and Halloween greetings to every room recipient, with cost confirmation and no daily-cap bypass.');
  }finally{await browser.close()}

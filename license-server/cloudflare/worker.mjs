@@ -3,6 +3,7 @@ import {random,sha,hasher,equal} from './crypto.mjs';
 import {discordFetch,syncDiscord,registerDiscordCommands,ensureMemberRole} from './discord.mjs';
 import {inspectDiscordChannel,inspectDiscordDraft} from './discord-composer.mjs';
 import {welcomeStatus,configureWelcome,previewWelcome,syncWelcomes} from './discord-welcome.mjs';
+import {serverSnapshot,configureServer} from './discord-server.mjs';
 const security={
   'cache-control':'no-store', 'x-content-type-options':'nosniff', 'referrer-policy':'no-referrer',
   'content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
@@ -48,6 +49,7 @@ export default {
         const th=token?await hash(token):'';
         const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),env.ADMIN_VERIFIER).first();
         if(!session)fail('login',401);
+        if(path==='/api/admin/discord/server'&&(post||request.method==='GET')){await rate(env.DISCORD_LIMIT,'server-config');return json(post?await configureServer(env,await body(request)):await serverSnapshot(env))}
         if(path==='/api/admin/discord/member-role'&&(post||request.method==='GET')){await rate(env.DISCORD_LIMIT,'member-role');if(post)await body(request);return json(await ensureMemberRole(env,post))}
         if(path==='/api/admin/discord/welcome'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'welcome-status');return json(await welcomeStatus(env,true))}
         if(path==='/api/admin/discord/welcome'&&post){await rate(env.DISCORD_LIMIT,'welcome-config');return json(await configureWelcome(env,await body(request)))}

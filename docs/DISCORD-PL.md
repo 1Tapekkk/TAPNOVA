@@ -125,6 +125,8 @@ Po wdrożeniu zmian przez `pnpm cloudflare:deploy` uruchom `pnpm discord:registe
 
 ## Role, blokowanie i utrzymanie
 
+Konfiguracja ról przez narzędzie właściciela: `node scripts/Inspect-Discord.cjs server` odczytuje role i nadpisania uprawnień. `server-role NAZWA` tworzy lub aktualizuje wyłącznie role Moderator, Support, Tester i Powiadomienia według stałych ustawień. Moderator otrzymuje podgląd dziennika audytu, zarządzanie wiadomościami i wątkami oraz timeout; pozostałe role nie dostają uprawnień administracyjnych. `server-community` pozwala rolom Członek, Moderator i Support czytać, pisać, reagować, wysyłać pliki/linki i odpowiadać w wątkach kategorii Społeczność. Zachowuje inne nadpisania i nie zmienia innych kategorii. `server-staff-order` ustawia Support i Moderatora poniżej najwyższej roli bota. Operacje wymagają uwierzytelnienia właściciela i ochrony CSRF. Nie przypisują ról użytkownikom ani nie włączają automatycznego nadawania.
+
 - Co pięć minut synchronizowanych jest do 20 najdawniej sprawdzanych użytkowników. Przy większej liczbie klientów pełna runda zajmie kilka cykli. `/licencja` odświeża rolę danej osoby od razu. Błąd Discorda, ograniczenie API lub brak uprawnień może opóźnić zmianę roli.
 - Użytkownik zachowuje rolę, jeżeli ma choć jedną ważną licencję. Po usunięciu ostatniej licencji z panelu rola również zostanie odebrana w kolejnym cyklu.
 - Dostęp w aplikacji nadal kontroluje serwer licencji i jej mechanizm sprawdzania sesji. Rola Discord jest osobnym mechanizmem dostępu do kanałów; nie gwarantujemy natychmiastowego odebrania jej na każdym koncie.

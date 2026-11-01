@@ -6,7 +6,8 @@ const config=path.join(root,'license-server/cloudflare/wrangler.local.json');
 const wrangler=path.join(path.dirname(require.resolve('wrangler/package.json')),'bin/wrangler.js');
 async function main(){
  const channel=process.argv[2],draft=process.argv[3]==='--draft',welcome=['welcome','welcome-enable','welcome-disable','welcome-preview','welcome-check'].includes(channel),memberRole=['member-role','member-role-create'].includes(channel);
- if(!welcome&&!memberRole&&!(draft?/^[a-f0-9-]{36}$/:/^\d{17,20}$/).test(channel||''))throw Error('Podaj ID kanalu Discord lub UUID projektu z --draft.');
+ const server=['server','server-role','server-community','server-staff-order'].includes(channel);
+ if(!welcome&&!memberRole&&!server&&!(draft?/^[a-f0-9-]{36}$/:/^\d{17,20}$/).test(channel||''))throw Error('Podaj ID kanalu Discord lub UUID projektu z --draft.');
  if(channel==='welcome-enable'&&!/^\d{17,20}$/.test(process.argv[3]||''))throw Error('Podaj ID kanalu powitan.');
  const secrets=JSON.parse(fs.readFileSync(path.join(dir,'cloudflare-secrets.json'),'utf8'));
  if(![secrets.LICENSE_SECRET,secrets.ADMIN_VERIFIER].every(s=>/^[a-f0-9]{64}$/.test(s)))throw Error('Invalid owner configuration');
@@ -19,8 +20,8 @@ async function main(){
  try{
   sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+180000},'${secrets.ADMIN_VERIFIER}');`);
   const origin='https://tapnova-licenses.tapnova-1tapekkk.workers.dev';
-  const route=memberRole?'member-role':welcome?(['welcome-preview','welcome-check'].includes(channel)?channel:'welcome'):(draft?'draft':'channel')+'?id='+channel;
-  const payload=channel==='welcome-enable'?{enabled:true,channelId:process.argv[3]}:channel==='welcome-disable'?{enabled:false}:['welcome-preview','welcome-check','member-role-create'].includes(channel)?{}:undefined;
+  const route=server?'server':memberRole?'member-role':welcome?(['welcome-preview','welcome-check'].includes(channel)?channel:'welcome'):(draft?'draft':'channel')+'?id='+channel;
+  const payload=channel==='server-staff-order'?{action:'staff-order'}:channel==='server-role'?{action:'role',name:process.argv[3]}:channel==='server-community'?{action:'community'}:channel==='welcome-enable'?{enabled:true,channelId:process.argv[3]}:channel==='welcome-disable'?{enabled:false}:['welcome-preview','welcome-check','member-role-create'].includes(channel)?{}:undefined;
   const r=await fetch(origin+'/api/admin/discord/'+route,{method:payload?'POST':'GET',...(payload?{body:JSON.stringify(payload)}:{}),headers:{origin,'x-tapnova-admin':'1',cookie:'tn_admin='+token,'content-type':'application/json'},redirect:'error',signal:AbortSignal.timeout(90000)});
   if(channel==='welcome-preview'&&r.ok){const out=path.join(root,'test-results/discord-welcome-live.png');fs.mkdirSync(path.dirname(out),{recursive:true});fs.writeFileSync(out,Buffer.from(await r.arrayBuffer()));console.log(out);return}
   const data=await r.json();if(!r.ok)throw Error('Discord operation failed: '+r.status+' '+data.error);

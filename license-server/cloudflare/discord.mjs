@@ -57,6 +57,17 @@ export async function registerDiscordCommands(env){
  if(!commands.every(c=>saved.some(s=>s.name===c.name)))throw Error('discord-registration-incomplete');
  return {ok:true,commands:commands.map(c=>c.name)};
 }
+export async function ensureMemberRole(env,create=false){
+ if(!configured(env))throw Error('discord-not-configured');
+ const path=`/guilds/${env.DISCORD_GUILD_ID}/roles`;
+ const roles=await api(env,path);
+ const existing=roles.find(r=>r.name.normalize('NFC').toLocaleLowerCase('pl')==='członek');
+ if(existing)return {created:false,role:existing};
+ if(!create)return {created:false,role:null};
+ // A plain member label; never grant administrative rights or change channel access.
+ const role=await api(env,path,'POST',{name:'Członek',permissions:'0',colors:{primary_color:0x95a5a6},hoist:false,mentionable:false});
+ return {created:true,role};
+}
 async function finish(env,i,content) {
  // Interaction tokens are scoped by Discord and never stored in D1 or logs.
  const result=await fetch(`${API}/webhooks/${env.DISCORD_APPLICATION_ID}/${encodeURIComponent(i.token)}/messages/@original`,{

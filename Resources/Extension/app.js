@@ -8427,10 +8427,15 @@ async function _s(type, rows) {
         if (index === targets.length - 1) break; // No wait after the final recipient.
         const seconds = Number(response.wait);
         let delay = response.wait != null && Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
+        // Halloween can be purchased for another recipient immediately. Its success
+        // timer is not a global batch limit. Explicit FailedCooldown / HTTP 429
+        // rejections above still wait and retry the same recipient. Single-target
+        // repeats retain their cooldown, and the raw API response stays unchanged.
+        if (response.ok && outgoingType === 'HalloweenGreeting') delay = 0;
         // No guessed hour-long cooldown: use the server's next response to learn
         // the actual limit when successful responses omit a duration.
         a.greetingWaitReason = delay > 0 ? 'server' : 'pacing';
-        // Fast queue only removes our extra pacing, never the server cooldown.
+        // Keep a small interval between requests; never send concurrently.
         delay = delay == null || delay === 0 ? (a.instantMode ? 0.25 : 1) : delay;
         if (!(await tnGreetingBatchWait(a, delay))) { stopped = true; break; }
       }

@@ -12,7 +12,7 @@ const files=['locales-pl.js','control-core.js','control-center.js','workspace-to
    const request=route.request(),url=new URL(request.url());
    if(url.pathname==='/federationgateway/graphql'){
     const body=request.postDataJSON();calls.push(body.variables);
-    return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{greetings:{sendGreeting:{success:true,data:{nextGreetingSecondsRemaining:0}}}}})});
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({data:{greetings:{sendGreeting:{success:true,data:{nextGreetingSecondsRemaining:body.variables.greetingType==='HalloweenGreeting'?900:0}}}}})});
    }
    if(url.origin!=='https://tapnova-preview.invalid')return route.abort();
    if(url.pathname==='/')return route.fulfill({contentType:'text/html',body:'<!doctype html><meta charset="utf-8"><body>'+files.map(f=>`<script src="/${f}"></script>`).join('')});
@@ -40,7 +40,7 @@ const files=['locales-pl.js','control-core.js','control-center.js','workspace-to
   await clickButton('Halloween Greeting');
   let confirmation='';page.once('dialog',async dialog=>{confirmation=dialog.message();await dialog.accept()});
   await clickButton('Wyślij do wszystkich');
-  await page.waitForFunction(()=>window.__batchTest.state.autographer.greetingAllSummary?.startsWith('Halloween Greeting')&&!window.__batchTest.state.autographer.greetingAllRunning);
+  await page.waitForFunction(()=>window.__batchTest.state.autographer.greetingAllSummary?.startsWith('Halloween Greeting')&&!window.__batchTest.state.autographer.greetingAllRunning,null,{timeout:10000});
   assert.match(confirmation,/2 Diax/);
   assert.deepEqual(calls.slice(2).map(x=>[x.greetingType,x.receiverProfileId]),[['HalloweenGreeting','alice'],['HalloweenGreeting','bob']]);
   assert.ok(calls.every(x=>x.ignoreDailyCap===false));assert.deepEqual(errors,[]);

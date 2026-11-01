@@ -72,9 +72,33 @@ const root = path.resolve(__dirname,'..');
       wc.session.webRequest.onBeforeRequest((_details,callback)=>callback({cancel:false}));
       await wc.session.protocol.handle('https',request=>{
         const url=new URL(request.url);
+        if(url.pathname==='/startup-fixture')return new Response(`<!doctype html><body><script>
+          window.startupErrors=[];window.startupVisibility=document.visibilityState;
+          const translations={};
+          document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')try{translations.pending.loading_resumed}catch(e){startupErrors.push(e.message)}});
+          </script>`,{headers:{'content-type':'text/html'}});
         if(url.hostname==='moviestarplanet2.com')return new Response('<!doctype html><meta charset="utf-8"><body><canvas tabindex="0"></canvas><h1>Offline game fixture</h1>'+(url.pathname==='/'?'<iframe src="/fixture-frame"></iframe>':''),{headers:{'content-type':'text/html'}});
         return new Response('',{status:404});
       });
+      const mainWindow=BrowserWindow.getAllWindows()[0];mainWindow.showInactive();
+      const loader=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/package.json')('./desktop/game-start.cjs');
+      async function startupTrial(fixed){
+        // Deliver a visibility notification explicitly: native event timing differs
+        // across CI window managers. The game's not-yet-loaded translations are real JS.
+        const view=new BrowserWindow({show:false,width:500,height:400,webPreferences:{session:wc.session,sandbox:true,contextIsolation:true,nodeIntegration:false}});
+        const show=visible=>{
+          if(!visible){view.hide();return}
+          view.showInactive();
+          if(view.webContents.getURL().endsWith('/startup-fixture'))void view.webContents.executeJavaScript('document.dispatchEvent(new Event("visibilitychange"))');
+        };
+        try{
+          await view.webContents.loadURL('about:blank');
+          if(fixed)await loader.loadVisibleGame({webContents:view.webContents,url:'https://moviestarplanet2.com/startup-fixture',show});
+          else {await view.webContents.loadURL('https://moviestarplanet2.com/startup-fixture');show(true)}
+          return await view.webContents.executeJavaScript('new Promise(resolve=>setTimeout(()=>resolve({initial:startupVisibility,errors:startupErrors}),250))');
+        }finally{view.destroy()}
+      }
+      const oldStartup=await startupTrial(false),fixedStartup=await startupTrial(true);
       await wc.loadURL('https://moviestarplanet2.com/');
       const result=await wc.executeJavaScript(`new Promise(resolve=>{let tries=0;const check=()=>{if(window.__xbMountPanel&&window.__tapnovaUI){window.__xbPlayAt=Date.now();window.__xbMountPanel();resolve({panel:!!window.__xbPanel,comments:typeof window.__tapnovaComments,require:typeof require,bridge:typeof window.tapnova,game:location.hostname})}else if(++tries<100)setTimeout(check,50);else resolve({error:'document-start injection did not mount'})};check()})`);
       const packs=await wc.executeJavaScript(`new Promise(resolve=>{const id='desktop-test';let timer=setTimeout(()=>resolve({error:'pack bridge timeout'}),10000);window.addEventListener('message',function handler(e){if(e.data?.__xbPack===1&&e.data.dir==='res'&&e.data.reqId===id){clearTimeout(timer);window.removeEventListener('message',handler);resolve({ok:e.data.ok,hasPack:!!e.data.emojis})}});window.postMessage({__xbPack:1,dir:'req',reqId:id},location.origin)})`);
@@ -96,8 +120,10 @@ const root = path.resolve(__dirname,'..');
       const photo=await photoModule.createPhotographer({wait:async()=>{}})({webContents:main.webContents,
         chooseFile:async()=>({filePath:'offline.png'}),writeFile:async(_file,bytes)=>{capturedBytes=bytes.length}});
       const restored=await main.webContents.executeJavaScript('getComputedStyle(window.__xbPanel).visibility');
-      return {result,packs,reloaded,childInjected,photo,capturedBytes,restored,diagnosticText,throttling:wc.getBackgroundThrottling(),preferences:wc.getLastWebPreferences()};
+      return {oldStartup,fixedStartup,result,packs,reloaded,childInjected,photo,capturedBytes,restored,diagnosticText,throttling:wc.getBackgroundThrottling(),preferences:wc.getLastWebPreferences()};
     });
+    assert.ok(integration.oldStartup.errors.some(e=>e.includes('loading_resumed')),'Showing the game after loading reproduces Nebula error');
+    assert.equal(integration.fixedStartup.initial,'visible');assert.deepEqual(integration.fixedStartup.errors,[],'Visible-first startup does not trigger premature loading_resumed');
     assert.equal(integration.result.panel,true,JSON.stringify(integration));
     assert.equal(integration.photo.ok,true);assert.ok(integration.capturedBytes>100);assert.equal(integration.restored,'visible');
     assert.equal(integration.result.comments,'object','Status comments module is injected');

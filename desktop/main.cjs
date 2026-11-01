@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { GAME_URL, isGameURL, tabs } = require('./policy.cjs');
+const {loadVisibleGame}=require('./game-start.cjs');
 const takePhoto = require('./photo.cjs').createPhotographer();
 const {createUpdates,windowsEngine,RELEASES}=require('./updates.cjs');
 const smoke = process.argv.includes('--smoke-test');
@@ -50,7 +51,7 @@ async function startGame() {
   if (!loaded) {
     busy = true;
     status('loading','Ładowanie MovieStarPlanet 2…');
-    try { await game.webContents.loadURL(GAME_URL); loaded = true; status('ready','Gra otwarta · zaloguj się w MSP2'); }
+    try { await loadVisibleGame({webContents:game.webContents,url:GAME_URL,show:showGame}); loaded = true; status('ready','Gra otwarta · zaloguj się w MSP2'); }
     catch { status('error','Nie udało się wczytać gry. Sprawdź internet i ponów.'); }
     finally { busy = false; }
   }

@@ -15,6 +15,8 @@ let win, game, gameSession, visible = false, loaded = false, busy = false;
 let lastStatus = { kind:'idle', text:'Gotowe do gry' };
 let updates;
 let license;
+let presenceEnabled=false,presenceLoaded=false,presenceWrite=Promise.resolve();
+const presence=require('./discord-presence.cjs').createPresence({disabled:smoke,notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:presence',state)}});
 app.setName('TAPNOVA');
 // A separate profile avoids corrupting or exporting the legacy WebView2 profile.
 app.setPath('userData', smoke ? path.join(require('node:os').tmpdir(),'tapnova-test-'+process.pid) : path.join(app.getPath('appData'),'TAPNOVA'));
@@ -41,6 +43,7 @@ function layout() {
 function showGame(show) {
   if (show === visible) return;
   visible = show;
+  presence.setMode(show?'game':'home');
   if (show) { win.contentView.addChildView(game); layout(); game.webContents.focus(); }
   else { win.contentView.removeChildView(game); win.webContents.focus(); }
 }
@@ -115,6 +118,10 @@ async function extensionMessage(event, message) {
 }
 
 async function createWindow() {
+  if(!presenceLoaded){
+    try{presenceEnabled=JSON.parse(await fs.readFile(path.join(app.getPath('userData'),'discord-presence.json'),'utf8')).enabled===true}catch{presenceEnabled=false}
+    presenceLoaded=true;
+  }
   if(!license){
     const config=JSON.parse(await fs.readFile(path.join(__dirname,'generated/license-config.json'),'utf8'));
     license=require('./license.cjs').createLicense({serverUrl:config.serverUrl,fetch:(...args)=>net.fetch(...args),platform:process.platform,test:smoke&&!process.argv.includes('--test-activation'),
@@ -167,7 +174,7 @@ async function createWindow() {
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
   win.on('resize',layout);
-  win.on('closed',()=>{ game?.webContents.close(); win=null; game=null; visible=false; loaded=false; });
+  win.on('closed',()=>{ presence.stop();game?.webContents.close(); win=null; game=null; visible=false; loaded=false; });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform==='darwin'?[{role:'appMenu'}]:[]),
     {label:'Edycja',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
@@ -175,6 +182,7 @@ async function createWindow() {
   ]));
   await win.loadFile(path.join(__dirname,'index.html'));
   if (!smoke) win.show();
+  presence.setMode('home');presence.start(presenceEnabled);
   status('idle','Gotowe do gry');
   // The shell must be visible before the OS may ask for access to secure storage.
   void license.start();
@@ -185,6 +193,18 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
     case 'status': return lastStatus;
+    case 'presence-status': return presence.snapshot();
+    case 'presence-set': {
+      if(typeof value!=='boolean')return {ok:false};
+      const save=async()=>{
+        if(!value){presenceEnabled=false;presence.start(false)}
+        const file=path.join(app.getPath('userData'),'discord-presence.json');
+        try{await fs.writeFile(file+'.tmp',JSON.stringify({enabled:value}),{mode:0o600});await fs.rename(file+'.tmp',file)}
+        catch{return {...presence.snapshot(),error:'save'}}
+        presenceEnabled=value;return presence.start(value);
+      };
+      presenceWrite=presenceWrite.then(save,save);return presenceWrite;
+    }
     case 'diagnostics-export': {
       const result=await dialog.showSaveDialog(win,{title:'Zapisz raport diagnostyczny TAPNOVA',defaultPath:path.join(app.getPath('documents'),'TAPNOVA-diagnostyka.json'),filters:[{name:'Raport JSON',extensions:['json']}]});
       if(result.canceled||!result.filePath)return {ok:false,cancelled:true};
@@ -226,5 +246,5 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   }
 });
 app.on('window-all-closed',()=>{ if(process.platform!=='darwin') app.quit(); });
-app.on('before-quit',()=>{updates?.stop();license?.stop();void diagnostics.flush()});
+app.on('before-quit',()=>{presence.stop();updates?.stop();license?.stop();void diagnostics.flush()});
 app.on('activate',()=>{ if(!win) createWindow().catch(error=>dialog.showErrorBox('TAPNOVA',error.message)); });

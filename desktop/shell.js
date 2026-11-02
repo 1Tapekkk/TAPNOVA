@@ -16,6 +16,16 @@ const paths = {
 };
 document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[el.dataset.icon]||paths.star}</svg>`;});
 const api = window.tapnova;
+let presenceEnabled=false;
+function displayPresence(state){
+  if(typeof state?.enabled!=='boolean')return;
+  presenceEnabled=state.enabled;
+  const button=document.querySelector('#presence-toggle');button.setAttribute('aria-pressed',String(presenceEnabled));button.textContent=presenceEnabled?'Wyłącz status Discord':'Włącz status Discord';
+  document.querySelector('#presence-status').textContent=state.error==='save'?'Nie zapisano ustawienia. Sprawdź dostęp do plików aplikacji; zmiana może nie przetrwać ponownego uruchomienia.':({off:'Wyłączone — status nie jest udostępniany.',waiting:'Oczekiwanie na uruchomiony Discord. Połączenie ponowi się automatycznie.',connected:'Status przekazany do Discorda. Widoczność zależy od ustawień prywatności Discorda.',error:'Discord odrzucił status. Połączenie zostanie ponowione.',unavailable:'Status wyłączony w trybie testowym.'}[state.phase]||'Łączenie z Discordem…');
+}
+document.querySelector('#presence-toggle').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{displayPresence(await command('presence-set',!presenceEnabled))}finally{button.disabled=false}});
+api?.onPresence?.(displayPresence);
+if(api)command('presence-status').then(displayPresence);
 document.querySelector('#platform').textContent = api?.platform === 'darwin' ? '· macOS' : '· Windows';
 function displayStatus(value) {
   document.querySelector('#status-text').textContent=value.text;

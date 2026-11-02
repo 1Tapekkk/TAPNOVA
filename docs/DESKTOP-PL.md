@@ -144,3 +144,16 @@ Jeśli macOS blokuje pobraną aplikację i ufasz temu wydaniu, po próbie urucho
 [Edytowalny projekt w Figmie](https://www.figma.com/design/4rK0z1zkwGDv91K1z9ldCN)
 
 Kod aplikacji: `desktop/`. Wspólna warstwa panelu: `Resources/Extension/panel-ui.js`. Logika funkcji: `Resources/Extension/app.js`. Projekt bazuje na MSP2TOOL / 6x0k Space; szczegóły pochodzenia w LICENSE i NOTICE.
+## Discord Rich Presence (od 4.2.7)
+
+1. Uruchom i zaloguj się do **aplikacji Discord na komputerze**. Discord w samej przeglądarce lub na telefonie nie wystarczy.
+2. W TAPNOVA otwórz **Ustawienia → Discord Rich Presence → Włącz status Discord**. Domyślnie udostępnianie jest wyłączone.
+3. W Discordzie zezwól na udostępnianie aktywności w ustawieniach prywatności aktywności. TAPNOVA nie zmienia tych ustawień.
+4. Po połączeniu status pokazuje nazwę aplikacji, czas od włączenia integracji i widok „Przegląd aplikacji” albo „MovieStarPlanet 2”. Może też zawierać przycisk pobrania TAPNOVA.
+5. Aby przestać udostępniać status, kliknij **Wyłącz status Discord** albo zamknij okno TAPNOVA. Ustawienie włączenia jest pamiętane przy następnym uruchomieniu.
+
+Obsługiwane są Windows i macOS. Integracja korzysta z istniejącej aplikacji Discord o nazwie **TAPNOVA - Bot**, więc taki nagłówek może pojawić się na profilu. Nie potrzebujesz tokena bota, hasła ani dodawania bota do serwera. Nick MSP2, licencja i używane narzędzia nie są przekazywane w statusie.
+
+Komunikat „Oczekiwanie na uruchomiony Discord” oznacza brak połączenia z lokalnym klientem. Połączenie ponawia się co 30 sekund; zmiany widoku są wysyłane nie częściej niż co 15 sekund. Brak Discorda nie blokuje gry. „Status przekazany do Discorda” oznacza potwierdzenie odebrania statusu, ale jego widoczność dla innych nadal zależy od ustawień Discorda.
+
+Dokumentacja techniczna: [Discord RPC](https://docs.discord.com/developers/topics/rpc) i [Rich Presence bez uwierzytelniania](https://docs.discord.com/developers/discord-social-sdk/development-guides/setting-rich-presence).

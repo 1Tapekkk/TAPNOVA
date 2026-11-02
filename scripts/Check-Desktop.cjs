@@ -52,11 +52,13 @@ const root = path.resolve(__dirname,'..');
     assert.match(await page.locator('#page-help').innerText(),/Ctrl\+V/);
     await page.locator('.nav-item[data-page="settings"]').click();assert.ok(await page.locator('#clear-data').isVisible());
     assert.equal(await page.evaluate(()=>typeof window.tapnova.onPresence),'function');
-    assert.deepEqual(await page.evaluate(()=>window.tapnova.command('presence-status')),{enabled:false,phase:'off'});
+    assert.deepEqual(await page.evaluate(()=>window.tapnova.command('presence-status')),{enabled:true,phase:'unavailable',mode:'home'});
     assert.deepEqual(await page.evaluate(()=>window.tapnova.command('presence-set','true')),{ok:false});
     await page.locator('#presence-toggle').click();
+    await page.waitForFunction(()=>document.querySelector('#presence-toggle').getAttribute('aria-pressed')==='false'&&!document.querySelector('#presence-toggle').disabled);
+    await page.locator('#presence-toggle').click();
     await page.waitForFunction(()=>document.querySelector('#presence-toggle').getAttribute('aria-pressed')==='true'&&!document.querySelector('#presence-toggle').disabled);
-    assert.deepEqual(await page.evaluate(()=>window.tapnova.command('presence-status')),{enabled:true,phase:'unavailable'});
+    assert.deepEqual(await page.evaluate(()=>window.tapnova.command('presence-status')),{enabled:true,phase:'unavailable',mode:'home'});
     assert.equal(JSON.parse(fs.readFileSync(path.join(profile,'discord-presence.json'),'utf8')).enabled,true);
     await page.locator('#presence-toggle').click();
     await page.waitForFunction(()=>document.querySelector('#presence-toggle').getAttribute('aria-pressed')==='false'&&!document.querySelector('#presence-toggle').disabled);
@@ -144,6 +146,19 @@ const root = path.resolve(__dirname,'..');
     assert.equal(integration.preferences.sandbox,true);assert.equal(integration.preferences.nodeIntegration,false);assert.equal(integration.preferences.contextIsolation,true);
     assert.equal(integration.throttling,true);
     assert.ok(integration.diagnosticText.includes('321'));assert.ok(!integration.diagnosticText.includes('private-secret-fixture'));
+    await application.evaluate(async({BrowserWindow,webContents})=>{
+      const shell=BrowserWindow.getAllWindows()[0].webContents;
+      const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
+      await wc.loadURL('https://moviestarplanet2.com/presence-fixture');
+    });
+    assert.equal((await page.evaluate(()=>window.tapnova.command('presence-status'))).mode,'game','Detect loaded game automatically');
+    await page.evaluate(()=>window.tapnova.command('home'));
+    assert.equal((await page.evaluate(()=>window.tapnova.command('presence-status'))).mode,'game','Game remains detected behind shell');
+    await application.evaluate(async({BrowserWindow,webContents})=>{
+      const shell=BrowserWindow.getAllWindows()[0].webContents;
+      const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');await wc.loadURL('about:blank');
+    });
+    assert.equal((await page.evaluate(()=>window.tapnova.command('presence-status'))).mode,'home','Clear game state after unloading');
     // Exercise the actual electron-updater transport against a loopback fixture.
     // Fake installers are checksum-tested, never executed; the real user profile is not used.
     const transport=await application.evaluate(async({app})=>{

@@ -2,6 +2,11 @@
 const net=require('node:net'),path=require('node:path'),{randomUUID}=require('node:crypto');
 const CLIENT_ID='1565799484066103397';
 const MAX_FRAME=1024*1024;
+const IMAGE_URL=`https://cdn.discordapp.com/app-icons/${CLIENT_ID}/805159c007f5e7ac9533d2a2aec65778.png?size=512`;
+async function readPreference(file){
+  try{return JSON.parse(await require('node:fs/promises').readFile(file,'utf8')).enabled===true}
+  catch(error){return error.code==='ENOENT'}
+}
 function ipcPaths(platform=process.platform,env=process.env){
   if(platform==='win32')return Array.from({length:10},(_,n)=>`\\\\?\\pipe\\discord-ipc-${n}`);
   const roots=[...new Set([env.XDG_RUNTIME_DIR,env.TMPDIR,env.TMP,env.TEMP,'/tmp'].filter(p=>p&&path.posix.isAbsolute(p)))];
@@ -14,13 +19,13 @@ function frame(op,value){
 }
 function activity(mode,started){
   return {type:0,details:'TAPNOVA • Twoja przestrzeń',state:mode==='game'?'MovieStarPlanet 2':'Przegląd aplikacji',
-    timestamps:{start:started},assets:{large_image:`https://cdn.discordapp.com/app-icons/${CLIENT_ID}/805159c007f5e7ac9533d2a2aec65778.png`,large_text:'TAPNOVA'},
+    timestamps:{start:started},assets:{large_image:IMAGE_URL,large_text:'TAPNOVA — Twoja przestrzeń'},
     buttons:[{label:'Pobierz TAPNOVA',url:'https://github.com/1Tapekkk/TAPNOVA/releases/latest'}]};
 }
 function createPresence({notify=()=>{},paths=ipcPaths(),disabled=false,connect=p=>net.createConnection(p),retryMs=30000,timeoutMs=5000,intervalMs=15000}={}){
   let enabled=false,running=false,phase='off',mode='home',started=0,socket=null,ready=false;
   let retry,timeout,update,buffer=Buffer.alloc(0),index=0,lastSent=0,sentMode=null,pending=null;
-  const snapshot=()=>({enabled,phase});
+  const snapshot=()=>({enabled,phase,mode});
   function publish(next){phase=next;notify(snapshot())}
   function clean(){clearTimeout(timeout);clearTimeout(update);timeout=update=null;ready=false;pending=null;buffer=Buffer.alloc(0);const old=socket;socket=null;old?.destroy()}
   function active(){return running&&enabled&&!disabled}
@@ -84,4 +89,4 @@ function createPresence({notify=()=>{},paths=ipcPaths(),disabled=false,connect=p
     stop(){running=false;disconnect();publish(enabled?'waiting':'off')}
   };
 }
-module.exports={createPresence,ipcPaths,frame,activity,CLIENT_ID};
+module.exports={createPresence,ipcPaths,frame,activity,CLIENT_ID,IMAGE_URL,readPreference};

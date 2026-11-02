@@ -147,9 +147,9 @@ Kod aplikacji: `desktop/`. Wspólna warstwa panelu: `Resources/Extension/panel-u
 ## Discord Rich Presence (od 4.2.7)
 
 1. Uruchom i zaloguj się do **aplikacji Discord na komputerze**. Discord w samej przeglądarce lub na telefonie nie wystarczy.
-2. W TAPNOVA otwórz **Ustawienia → Discord Rich Presence → Włącz status Discord**. Domyślnie udostępnianie jest wyłączone.
+2. Od wersji 4.2.8 TAPNOVA łączy się automatycznie z Discordem. Jeśli wcześniej ręcznie wyłączono status, wybierz **Ustawienia → Discord Rich Presence → Włącz status Discord**.
 3. W Discordzie zezwól na udostępnianie aktywności w ustawieniach prywatności aktywności. TAPNOVA nie zmienia tych ustawień.
-4. Po połączeniu status pokazuje nazwę aplikacji, czas od włączenia integracji i widok „Przegląd aplikacji” albo „MovieStarPlanet 2”. Może też zawierać przycisk pobrania TAPNOVA.
+4. Po połączeniu status pokazuje grafikę TAPNOVA, czas sesji i „Przegląd aplikacji” albo „MovieStarPlanet 2” po wczytaniu gry. Przejście do ustawień nie usuwa informacji o uruchomionej grze. Może też zawierać przycisk pobrania TAPNOVA.
 5. Aby przestać udostępniać status, kliknij **Wyłącz status Discord** albo zamknij okno TAPNOVA. Ustawienie włączenia jest pamiętane przy następnym uruchomieniu.
 
 Obsługiwane są Windows i macOS. Integracja korzysta z istniejącej aplikacji Discord o nazwie **TAPNOVA - Bot**, więc taki nagłówek może pojawić się na profilu. Nie potrzebujesz tokena bota, hasła ani dodawania bota do serwera. Nick MSP2, licencja i używane narzędzia nie są przekazywane w statusie.

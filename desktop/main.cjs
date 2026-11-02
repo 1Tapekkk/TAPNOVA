@@ -43,7 +43,6 @@ function layout() {
 function showGame(show) {
   if (show === visible) return;
   visible = show;
-  presence.setMode(show?'game':'home');
   if (show) { win.contentView.addChildView(game); layout(); game.webContents.focus(); }
   else { win.contentView.removeChildView(game); win.webContents.focus(); }
 }
@@ -119,7 +118,7 @@ async function extensionMessage(event, message) {
 
 async function createWindow() {
   if(!presenceLoaded){
-    try{presenceEnabled=JSON.parse(await fs.readFile(path.join(app.getPath('userData'),'discord-presence.json'),'utf8')).enabled===true}catch{presenceEnabled=false}
+    presenceEnabled=await require('./discord-presence.cjs').readPreference(path.join(app.getPath('userData'),'discord-presence.json'));
     presenceLoaded=true;
   }
   if(!license){
@@ -155,9 +154,10 @@ async function createWindow() {
   game.webContents.on('will-redirect',(event,url)=>{ if (!isGameURL(url)) event.preventDefault(); });
   game.webContents.on('will-frame-navigate',event=>{ if (event.isMainFrame && !isGameURL(event.url)) event.preventDefault(); });
   game.webContents.on('did-start-loading',()=>status('loading','Ładowanie gry…'));
+  game.webContents.on('did-finish-load',()=>presence.setMode(isGameURL(game.webContents.getURL())?'game':'home'));
   game.webContents.on('did-stop-loading',()=>{ if(loaded) status('ready','Gra otwarta · zaloguj się w MSP2'); });
-  game.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{ if (isMainFrame && code!==-3) { diagnostics.record('load-failed',{code,source:'game'}); loaded=false; showGame(false); status('error','Brak połączenia z grą. Spróbuj ponownie.'); } });
-  game.webContents.on('render-process-gone',(_event,details)=>{ diagnostics.record('renderer-gone',{source:'game',reason:details.reason,code:details.exitCode});loaded=false; showGame(false); status('error','Proces gry został zamknięty. Otwórz grę ponownie.'); });
+  game.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{ if (isMainFrame && code!==-3) { diagnostics.record('load-failed',{code,source:'game'}); loaded=false; presence.setMode('home'); showGame(false); status('error','Brak połączenia z grą. Spróbuj ponownie.'); } });
+  game.webContents.on('render-process-gone',(_event,details)=>{ diagnostics.record('renderer-gone',{source:'game',reason:details.reason,code:details.exitCode});loaded=false; presence.setMode('home'); showGame(false); status('error','Proces gry został zamknięty. Otwórz grę ponownie.'); });
   for (const [source,wc] of [['game',game.webContents],['shell',win.webContents]]) {
     wc.on('unresponsive',()=>{diagnostics.record('unresponsive',{source});status('error','Aplikacja czeka na odpowiedź. Możesz ponownie otworzyć grę.');});
     wc.on('responsive',()=>{diagnostics.record('responsive',{source});status('ready','Aplikacja ponownie odpowiada.');});

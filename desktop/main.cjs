@@ -15,6 +15,30 @@ let win, game, gameSession, visible = false, loaded = false, busy = false;
 let lastStatus = { kind:'idle', text:'Gotowe do gry' };
 let updates;
 let license;
+const WORKSPACE_URL='https://moviestarplanet2.com/.tapnova-workspace';
+let workspaceReady=false,workspaceProtocolInstalled=false;
+const account=require('./account.cjs').createAccount({fetch:(...args)=>net.fetch(...args),notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:account',state)},changed:async value=>{
+  if(!game||game.webContents.isDestroyed()||game.webContents.getURL()!==WORKSPACE_URL)return;
+  if(value)await attachAccount(value);else{workspaceReady=false;showGame(false);await game.webContents.loadURL('about:blank')}
+}});
+async function attachAccount(value){
+  if(!game||game.webContents.getURL()!==WORKSPACE_URL)return false;
+  return game.webContents.executeJavaScript(`window.__tapnovaAttachSession?.(${JSON.stringify(value)})===true`);
+}
+async function openWorkspace(tab){
+  if(!license?.isActive()||!account.lease()||busy)return false;
+  busy=true;
+  try{
+    if(!workspaceReady||game.webContents.getURL()!==WORKSPACE_URL){
+      loaded=false;showGame(true);await game.webContents.loadURL(WORKSPACE_URL);workspaceReady=true;
+    }
+    if(!await attachAccount(account.lease()))throw Error('Workspace unavailable');
+    showGame(true);
+    await game.webContents.executeJavaScript(`window.__xbPanel?.querySelector('[data-tab-id="${tab}"]')?.click()`);
+    status('ready','Panel konta · bez uruchomionej gry');return true;
+  }catch{workspaceReady=false;showGame(false);status('error','Nie udało się otworzyć panelu konta. Spróbuj ponownie.');return false}
+  finally{busy=false}
+}
 let presenceEnabled=false,presenceLoaded=false,presenceWrite=Promise.resolve();
 const presence=require('./discord-presence.cjs').createPresence({disabled:smoke,notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:presence',state)}});
 app.setName('TAPNOVA');
@@ -50,6 +74,7 @@ async function startGame() {
   if (smoke) { status('idle','Podgląd offline — połączenia z grą wyłączone'); return; }
   if(!license?.isActive()){status('error','Aktywuj TAPNOVA prawidłową licencją.');return}
   if (busy) return;
+  workspaceReady=false;
   if (!loaded) {
     busy = true;
     status('loading','Ładowanie MovieStarPlanet 2…');
@@ -125,7 +150,7 @@ async function createWindow() {
     const config=JSON.parse(await fs.readFile(path.join(__dirname,'generated/license-config.json'),'utf8'));
     license=require('./license.cjs').createLicense({serverUrl:config.serverUrl,fetch:(...args)=>net.fetch(...args),platform:process.platform,test:smoke&&!process.argv.includes('--test-activation'),
       storage:require('./license.cjs').encryptedStorage({safeStorage,file:path.join(app.getPath('userData'),'license.bin')}),
-      notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:license',state);if(!state.active&&game&&!game.webContents.isDestroyed()){showGame(false);loaded=false;game.webContents.loadURL('about:blank').catch(()=>{})}}
+      notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:license',state);if(!state.active){account.logout();workspaceReady=false;if(game&&!game.webContents.isDestroyed()){showGame(false);loaded=false;game.webContents.loadURL('about:blank').catch(()=>{})}}}
     });
   }
   if(!updates) {
@@ -145,7 +170,11 @@ async function createWindow() {
   gameSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   gameSession.setPermissionCheckHandler(() => false);
   if(!smoke)gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:/^(https?|wss?):/.test(details.url)&&!license.isActive()}));
-  if (smoke) gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!details.url.startsWith('data:')}));
+  if (smoke) gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:details.url!==WORKSPACE_URL&&!details.url.startsWith('data:')}));
+  if(!workspaceProtocolInstalled){await gameSession.protocol.handle('https',async request=>{
+    if(request.url===WORKSPACE_URL)return new Response(await fs.readFile(path.join(__dirname,'workspace.html')),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
+    return gameSession.fetch(request,{bypassCustomProtocolHandlers:true});
+  });workspaceProtocolInstalled=true}
   win = new BrowserWindow({width:1360,height:920,minWidth:960,minHeight:700,show:false,backgroundColor:'#101116',title:'TAPNOVA · created by 1TapGod',icon:path.join(__dirname,'generated/tapnova.png'),webPreferences:{preload:path.join(__dirname,'shell-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   game = new WebContentsView({webPreferences:{session:gameSession,contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:true}});
   game.setBackgroundColor('#101116');
@@ -154,7 +183,7 @@ async function createWindow() {
   game.webContents.on('will-redirect',(event,url)=>{ if (!isGameURL(url)) event.preventDefault(); });
   game.webContents.on('will-frame-navigate',event=>{ if (event.isMainFrame && !isGameURL(event.url)) event.preventDefault(); });
   game.webContents.on('did-start-loading',()=>status('loading','Ładowanie gry…'));
-  game.webContents.on('did-finish-load',()=>presence.setMode(isGameURL(game.webContents.getURL())?'game':'home'));
+  game.webContents.on('did-finish-load',()=>presence.setMode(isGameURL(game.webContents.getURL())&&game.webContents.getURL()!==WORKSPACE_URL?'game':'home'));
   game.webContents.on('did-stop-loading',()=>{ if(loaded) status('ready','Gra otwarta · zaloguj się w MSP2'); });
   game.webContents.on('did-fail-load',(_event,code,_description,_url,isMainFrame)=>{ if (isMainFrame && code!==-3) { diagnostics.record('load-failed',{code,source:'game'}); loaded=false; presence.setMode('home'); showGame(false); status('error','Brak połączenia z grą. Spróbuj ponownie.'); } });
   game.webContents.on('render-process-gone',(_event,details)=>{ diagnostics.record('renderer-gone',{source:'game',reason:details.reason,code:details.exitCode});loaded=false; presence.setMode('home'); showGame(false); status('error','Proces gry został zamknięty. Otwórz grę ponownie.'); });
@@ -174,7 +203,7 @@ async function createWindow() {
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   win.webContents.on('will-navigate',event=>event.preventDefault());
   win.on('resize',layout);
-  win.on('closed',()=>{ presence.stop();game?.webContents.close(); win=null; game=null; visible=false; loaded=false; });
+  win.on('closed',()=>{ account.logout();workspaceReady=false;presence.stop();game?.webContents.close(); win=null; game=null; visible=false; loaded=false; });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     ...(process.platform==='darwin'?[{role:'appMenu'}]:[]),
     {label:'Edycja',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},
@@ -192,6 +221,14 @@ ipcMain.handle('tapnova:extension',extensionMessage);
 ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
+    case 'account-status': return account.snapshot();
+    case 'account-login': {
+      if(smoke||!license?.isActive())return {ok:false,error:'unavailable'};
+      const result=await account.login(value);
+      if(result.ok){workspaceReady=false;showGame(false);loaded=false;await game.webContents.loadURL('about:blank')}
+      return result;
+    }
+    case 'account-logout': account.logout();workspaceReady=false;if(game?.webContents.getURL()===WORKSPACE_URL){showGame(false);await game.webContents.loadURL('about:blank')}return account.snapshot();
     case 'status': return lastStatus;
     case 'presence-status': return presence.snapshot();
     case 'presence-set': {
@@ -228,6 +265,7 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
       return {ok:true};
     case 'tab': {
       if(!tabs.includes(value)) return {ok:false};
+      if(account.lease()&&!loaded)return {ok:await openWorkspace(value)};
       await startGame();
       if(!loaded) return {ok:false};
       await game.webContents.executeJavaScript(`(()=>{window.__xbPlayAt=Date.now();window.__xbMountPanel?.();const p=window.__xbPanel;if(!p)return false;p.style.display='flex';p.querySelector('[data-tab-id="${value}"]')?.click();return true})()`);
@@ -246,5 +284,5 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
   }
 });
 app.on('window-all-closed',()=>{ if(process.platform!=='darwin') app.quit(); });
-app.on('before-quit',()=>{presence.stop();updates?.stop();license?.stop();void diagnostics.flush()});
+app.on('before-quit',()=>{account.logout();presence.stop();updates?.stop();license?.stop();void diagnostics.flush()});
 app.on('activate',()=>{ if(!win) createWindow().catch(error=>dialog.showErrorBox('TAPNOVA',error.message)); });

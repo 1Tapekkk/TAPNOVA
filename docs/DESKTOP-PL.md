@@ -4,6 +4,16 @@ created by 1TapGod
 
 ## Uruchomienie
 
+### Biblioteka i logowanie bez gry (4.3.0)
+
+Kliknij **Zaloguj do MSP2** w prawym górnym rogu. Podaj nick, hasło MSP2 i serwer. Po powodzeniu wybierz kafelek w bibliotece i **Otwórz narzędzie**. Panel konta uruchomi się bez silnika gry. Wyszukiwarka obsługuje nazwy funkcji i polskie znaki; klawisz `/` ustawia w niej kursor.
+
+Hasło jest wysyłane bezpośrednio do `eu-secure.mspapis.com` lub `us-secure.mspapis.com`, zależnie od serwera. Tokeny są przechowywane wyłącznie w pamięci aplikacji i odświeżane podczas pracy. Zamknięcie aplikacji, wylogowanie z panelu lub utrata licencji usuwa tę sesję. Aplikacja nie zapisuje hasła na dysku ani nie wysyła go do Cloudflare lub MSP2TOOL.
+
+Funkcje bieżącego pokoju (uczestnicy, rozmowy, ochrona) wymagają otwartej gry. Przycisk **Otwórz MSP2** uruchamia oficjalną grę z jej własnym formularzem logowania; sesja panelu nie zastępuje automatycznie logowania do Unity. Odmowa lub dodatkowa weryfikacja przez MSP2 nie jest omijana — w takim przypadku skorzystaj z oficjalnej gry.
+
+Przepływ protokołu porównano z [implementacją klienta Luminary](https://github.com/v3ktacode/luminary/blob/main/src/client/endpoints/auth/grants.rs) i [publiczną konfiguracją OpenID MSP2](https://eu-secure.mspapis.com/loginidentity/.well-known/openid-configuration). Testy nie zastępują sprawdzenia logowania na rzeczywistym koncie.
+
 - Windows x64: uruchom instalator `TAPNOVA-<wersja>-win-x64.exe`, wybierz katalog instalacji i otwórz skrót „TAPNOVA 4”. Nie potrzebujesz .NET ani WebView2 — przeglądarka jest w paczce.
 - macOS: wybierz paczkę `arm64` dla Apple Silicon (M1 i nowsze) lub `x64` dla Intela. Otwórz DMG i przeciągnij TAPNOVA do Applications albo rozpakuj ZIP i przenieś TAPNOVA.app do Applications.
   Wymagany macOS 13 Ventura lub nowszy. Wydanie z GitHub Actions buduje i sprawdza paczki osobno na Macach Intel i Apple Silicon.

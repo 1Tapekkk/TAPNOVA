@@ -214,6 +214,18 @@
     @media(prefers-reduced-motion:reduce) { .tn-panel,.tn-panel *,.tn-panel *::before,.tn-panel *::after { animation:none!important; transition:none!important; } }
   `;
 
+  const libraryStyle = `
+    .tn-panel{background:radial-gradient(ellipse at 100% 0,#1c2f5755,transparent 65%),#080e19!important;border-color:#2b3853!important;box-shadow:0 28px 90px #000a!important}
+    .tn-header{background:#0b1220!important;border-bottom-color:#25324b!important}.tn-nav{background:#0a111e!important;border-color:#26324b!important}
+    .tn-nav button:hover{background:#1b2942!important}.tn-nav button[aria-current="page"]{box-shadow:0 3px 16px #798bff22!important}
+    .tn-content{background:transparent!important}.tn-section-head{background:radial-gradient(ellipse at 100% 0,#354b7c55,transparent 75%),#101b2e!important;border-color:#2d3d5d!important}
+    .tn-section-title{text-transform:uppercase;font-weight:800!important;letter-spacing:-1px!important}.tn-section-kicker{color:#93abd5!important}.tn-section-description{color:#9badca!important}
+    .tn-tool-card{background:linear-gradient(145deg,#15213a,#0d1525)!important;border-color:#2b3b57!important;border-radius:14px!important}
+    .tn-hero{background:radial-gradient(ellipse at 100% 0,#35529455,transparent 75%),#111d32!important;color:#e8f0ff!important;border:1px solid #2b3c5b!important}
+    .tn-hero h1{color:#eef3ff!important;text-transform:uppercase;letter-spacing:-1.3px!important}.tn-hero h1 em{color:#91adff!important}.tn-hero p,.tn-eyebrow{color:#a0b2d0!important}
+    .tn-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tn-shortcut{display:flex;flex-direction:column;align-items:flex-start;position:relative;padding:17px!important;border:1px solid #2a3a57;border-radius:13px;background:linear-gradient(145deg,#172742,#0b1525);min-height:155px}.tn-shortcut-arrow{position:absolute;right:15px;top:15px}.tn-shortcut-icon{background:#273a5d;color:#aec3ff}.tn-shortcut strong{text-transform:uppercase;letter-spacing:-.5px}.tn-footer{background:#0b1220!important;border-color:#23314b!important}
+    @container(max-width:400px){.tn-shortcuts{grid-template-columns:1fr}.tn-shortcut{min-height:115px}}
+  `;
   function welcome(key, context, labels) {
     const wrap = node('div', 'tn-welcome');
     const breadcrumb = node('div', 'tn-breadcrumb');
@@ -256,7 +268,7 @@
     panel.classList.add('tn-panel');
     // Start wide enough for the sidebar; retain explicit compact/maximized modes.
     if (panel.style.width === '560px') panel.style.width = '740px';
-    const sheet = node('style', ''); sheet.textContent = style + studioStyle + motionStyle; panel.append(sheet);
+    const sheet = node('style', ''); sheet.textContent = style + studioStyle + motionStyle + libraryStyle; panel.append(sheet);
     const title = refs.panelTitleEl;
     const brandRow = title.parentElement;
     const header = brandRow.parentElement.parentElement;

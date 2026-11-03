@@ -81,9 +81,15 @@ const root = path.resolve(__dirname,'..');
       const shell=BrowserWindow.getAllWindows()[0].webContents;
       const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
       if(!wc)throw Error('Game WebContents missing');
+      await wc.loadURL('https://moviestarplanet2.com/.tapnova-workspace');
+      const localWorkspace=await wc.executeJavaScript('({title:document.title,unity:typeof window.unityInstance,adapter:typeof window.__tapnovaAttachSession})');
+      if(localWorkspace.title!=='TAPNOVA · Panel konta'||localWorkspace.unity!=='undefined'||localWorkspace.adapter!=='function')throw Error('Local workspace handler failed');
+      await wc.loadURL('about:blank');
+      wc.session.protocol.unhandle('https');
       wc.session.webRequest.onBeforeRequest((_details,callback)=>callback({cancel:false}));
       await wc.session.protocol.handle('https',request=>{
         const url=new URL(request.url);
+        if(url.pathname==='/.tapnova-workspace')return new Response(process.getBuiltinModule('fs').readFileSync(app.getAppPath()+'/desktop/workspace.html'),{headers:{'content-type':'text/html'}});
         if(url.pathname==='/startup-fixture')return new Response(`<!doctype html><body><script>
           window.startupErrors=[];window.startupVisibility=document.visibilityState;
           const translations={};
@@ -159,6 +165,14 @@ const root = path.resolve(__dirname,'..');
       const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');await wc.loadURL('about:blank');
     });
     assert.equal((await page.evaluate(()=>window.tapnova.command('presence-status'))).mode,'home','Clear game state after unloading');
+    const workspace=await application.evaluate(async({BrowserWindow,webContents})=>{
+      const shell=BrowserWindow.getAllWindows()[0].webContents;
+      const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
+      await wc.loadURL('https://moviestarplanet2.com/.tapnova-workspace');
+      const token='header.'+Buffer.from(JSON.stringify({profileId:'fixture-profile',name:'Gracz testowy',exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.fixture';
+      return wc.executeJavaScript(`(()=>{const ok=window.__tapnovaAttachSession?.(${JSON.stringify({accessToken:token,profileId:'fixture-profile',username:'Gracz testowy',region:'PL'})});window.__xbPanel?.querySelector('[data-tab-id="homes"]')?.click();return {ok,authenticated:window.__xbPanel?.dataset.tnAuth,workspace:window.__xbPanel?.dataset.workspace,selected:window.__xbPanel?.querySelector('[data-tab-id="homes"]')?.getAttribute('aria-current'),unity:typeof window.unityInstance}})()`);
+    });
+    assert.deepEqual(workspace,{ok:true,authenticated:'true',workspace:'true',selected:'page',unity:'undefined'},'Account tools work in local page without Unity');
     // Exercise the actual electron-updater transport against a loopback fixture.
     // Fake installers are checksum-tested, never executed; the real user profile is not used.
     const transport=await application.evaluate(async({app})=>{

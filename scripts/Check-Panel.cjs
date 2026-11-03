@@ -66,7 +66,7 @@ const root = path.resolve(__dirname, '..');
     };
     await clickPanel('[data-tn-shortcut="homes"]');
     assert.equal(await page.evaluate(() => window.__xbPanel.querySelector('[data-tab-id="homes"]').getAttribute('aria-current')), 'page');
-    assert.match(await page.evaluate(() => window.__xbPanel.innerText), /Zbuduj swoją/);
+    assert.match(await page.evaluate(() => window.__xbPanel.textContent), /Zbuduj swoją/);
     await clickPanel('[data-tab-id="settings"]');
     assert.equal(await page.evaluate(() => window.__xbPanel.querySelector('[data-tab-id="settings"]').getAttribute('aria-current')), 'page');
     await clickPanel('[data-tab-id="profile"]');

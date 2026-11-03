@@ -7,6 +7,9 @@
   <title>TAPNOVA · Twoja przestrzeń</title>
   <link rel="stylesheet" href="shell.css">
   <script src="shell.js" defer></script>
+  <script src="library.js" defer></script>
+  <script src="account-ui.js" defer></script>
+  <link rel="stylesheet" href="library.css">
 </head>
 <body>
   <dialog id="license-gate" aria-labelledby="license-title">
@@ -37,34 +40,40 @@
       <button class="nav-item" data-page="help"><i data-icon="help"></i>Jak zacząć?</button>
       <button class="nav-item" data-page="settings"><i data-icon="settings"></i>Ustawienia aplikacji</button>
       <button id="update-badge" class="update-badge" hidden>Nowa wersja dostępna</button>
-      <div class="edition"><span class="edition-mark">TN</span><span>DESKTOP EDITION<small>Wersja <span data-app-version>4.2.0</span> <span id="platform"></span></small></span></div>
+      <div class="edition"><span class="edition-mark">TN</span><span>DESKTOP EDITION<small>Wersja <span data-app-version>4.3.0</span> <span id="platform"></span></small></span></div>
     </div>
   </aside>
 
   <header class="topbar">
     <div><span class="breadcrumb">Twoja przestrzeń <span>/</span></span> <strong id="page-title">Przegląd</strong></div>
-    <div class="topbar-actions"><span class="status-pill" id="connection"><span></span>Gotowe do gry</span><button class="icon-button" data-photo title="Zdjęcie gry · Ctrl+Shift+S" aria-label="Zrób zdjęcie gry"><i data-icon="camera"></i></button><button class="icon-button" data-reload title="Odśwież grę" aria-label="Odśwież grę"><i data-icon="refresh"></i></button></div>
+    <div class="topbar-actions"><button class="button button-secondary account-open" id="account-open">Zaloguj do MSP2</button><span class="status-pill" id="connection"><span></span>Gotowe do gry</span><button class="icon-button" data-photo title="Zdjęcie gry · Ctrl+Shift+S" aria-label="Zrób zdjęcie gry"><i data-icon="camera"></i></button><button class="icon-button" data-reload title="Odśwież grę" aria-label="Odśwież grę"><i data-icon="refresh"></i></button></div>
   </header>
 
   <main id="main">
     <section class="page" id="page-home" aria-labelledby="welcome-title">
-      <div class="page-heading"><div><span class="eyebrow">DOBRZE CIĘ WIDZIEĆ</span><h1 id="welcome-title">Twoja gra. Twój rytm.</h1><p>Wszystko, czego potrzebujesz, w jednej przestrzeni.</p></div><span class="outline-tag">MSP2 TOOLKIT <span>✦</span></span></div>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-copy"><span class="eyebrow">MNIEJ KLIKANIA. WIĘCEJ TWOJEGO ŚWIATA.</span><h2 id="hero-title">Graj po<br><em>swojemu.</em></h2><p>Wejdź do gry, wybierz narzędzia i poczuj się u siebie.<br>Resztę masz pod ręką.</p><button class="button button-dark" data-game>Otwórz grę <i data-icon="arrow"></i></button><span class="hero-note">Zalogujesz się bezpośrednio w MSP2</span></div>
-        <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="spark spark-one">✦</span><img src="generated/tapnova.svg" alt=""><span class="spark spark-two">✦</span><span class="art-caption">MAKE IT YOURS.</span></div>
-      </section>
-      <div class="section-heading"><h2>Twój szybki dostęp</h2><span>Mały skrót do wielkich możliwości</span></div>
-      <div class="quick-grid">
-        <button class="quick-card" data-tab="bots"><span class="card-icon purple"><i data-icon="star"></i></span><span class="card-arrow">↗</span><strong>Autografy i boty</strong><span>Znajdź gracza po nicku<br>i wybierz swój autograf.</span><small>Otwórz narzędzia <span>→</span></small></button>
-        <button class="quick-card" data-tab="profile"><span class="card-icon peach"><i data-icon="user"></i></span><span class="card-arrow">↗</span><strong>Profil i styl</strong><span>Twoja postać, animacje<br>i detale, które robią różnicę.</span><small>Odkryj możliwości <span>→</span></small></button>
-        <button class="quick-card" data-tab="homes"><span class="card-icon mint"><i data-icon="grid"></i></span><span class="card-arrow">↗</span><strong>Dom i przestrzeń</strong><span>Wybierz miejsce, w którym<br>naprawdę jesteś sobą.</span><small>Zobacz domy <span>→</span></small></button>
+
+      <div class="library-layout">
+        <section class="hero library-intro" aria-labelledby="welcome-title">
+          <span class="eyebrow">TAPNOVA / TWOJE CENTRUM MSP2</span>
+          <h1 id="welcome-title">TWOJA GRA.<br>TWÓJ <em>WYBÓR.</em></h1>
+          <p>Wybierz narzędzie. Otwórz swój panel.<br>Wszystko, czego potrzebujesz, w jednym miejscu.</p>
+          <div class="library-actions"><button class="button button-primary" data-game>Otwórz MSP2 <i data-icon="arrow"></i></button><button class="button button-secondary" data-page="help">Jak zacząć?</button></div>
+          <div class="library-note"><i data-icon="shield"></i><span>Twoje konto. Twoja kontrola.<br>Każda operacja na Twoich zasadach.</span></div>
+          <div class="library-signature"><img src="generated/tapnova.svg" alt="" width="42" height="42"><span>STWORZONE DLA TWOJEJ GRY<small>created by 1TapGod</small></span></div>
+        </section>
+        <section class="library-browser" aria-label="Biblioteka narzędzi">
+          <div class="library-search"><i data-icon="help"></i><label class="sr-only" for="tool-search">Szukaj narzędzia</label><input type="search" id="tool-search" placeholder="Znajdź swoje narzędzie…" autocomplete="off"><kbd>/</kbd></div>
+          <div class="library-filters" role="group" aria-label="Kategorie narzędzi"><button type="button" data-tool-filter="all" aria-pressed="true">Wszystko</button><button type="button" data-tool-filter="account" aria-pressed="false">Konto</button><button type="button" data-tool-filter="social" aria-pressed="false">Społeczność</button><button type="button" data-tool-filter="tools" aria-pressed="false">Narzędzia</button></div>
+          <div class="library-meta"><span id="tool-count" role="status" aria-live="polite"></span><span>WYBIERZ I OTWÓRZ ↗</span></div>
+          <div class="tool-grid" id="tool-grid"></div>
+          <div class="tool-empty" id="tool-empty" hidden><h2>Nie znaleziono narzędzia</h2><p>Spróbuj innej nazwy lub wyczyść filtry.</p><button class="button button-secondary" id="tool-reset">Wyczyść wyszukiwanie</button></div>
+        </section>
       </div>
-      <div class="onboarding"><span class="onboarding-icon"><i data-icon="help"></i></span><div><strong>Pierwszy raz w TAPNOVA?</strong><p>Otwórz grę i zaloguj się. Narzędzia rozpoznają Twoją sesję automatycznie.</p></div><button class="text-button" data-page="help">Krótki przewodnik <span>→</span></button></div>
     </section>
 
     <section class="page reading-page" id="page-help" hidden aria-labelledby="help-title">
-      <span class="eyebrow">ZACZNIJ W SWOIM TEMPIE</span><h1 id="help-title">Trzy kroki. I jesteś u siebie.</h1><p class="lead">TAPNOVA otwiera grę i porządkuje narzędzia w jednym oknie.</p>
-      <ol class="steps"><li><strong>Otwórz MovieStarPlanet 2</strong><p>Kliknij „Otwórz grę”. Zaloguj się w formularzu gry. Aplikacja nie wymaga osobnego konta TAPNOVA.</p></li><li><strong>Wybierz narzędzie z menu</strong><p>Profil, domy, autografy i pozostałe funkcje są dostępne w panelu. Niektóre pojawią się dopiero po zalogowaniu.</p></li><li><strong>Wpisz nick i wybierz gracza</strong><p>W sekcji „Autografy i boty” otwórz panel autografu, wpisz nick i naciśnij Enter lub przycisk wyszukiwania. Wybierz gracza z wyników przed wysłaniem.</p></li></ol>
+      <span class="eyebrow">ZACZNIJ W SWOIM TEMPIE</span><h1 id="help-title">Trzy kroki. I jesteś u siebie.</h1><p class="lead">TAPNOVA łączy panel konta, bibliotekę narzędzi i grę w jednym oknie.</p>
+      <ol class="steps"><li><strong>Otwórz MovieStarPlanet 2</strong><p>Kliknij „Zaloguj do MSP2”, aby korzystać z panelu bez gry. Możesz też otworzyć MSP2 i zalogować się w formularzu gry.</p></li><li><strong>Wybierz narzędzie z menu</strong><p>Profil, domy, autografy i pozostałe funkcje są dostępne w panelu. Niektóre pojawią się dopiero po zalogowaniu.</p></li><li><strong>Wpisz nick i wybierz gracza</strong><p>W sekcji „Autografy i boty” otwórz panel autografu, wpisz nick i naciśnij Enter lub przycisk wyszukiwania. Wybierz gracza z wyników przed wysłaniem.</p></li></ol>
       <div class="note"><strong>Masz kontrolę.</strong> Przycisk STOP w panelu zatrzymuje aktywne zadania. W polach działają Tab, Enter, zaznaczanie i wklejanie: Ctrl+V na Windows lub ⌘V na Macu.</div>
       <button class="button button-primary" data-game>Otwórz grę <i data-icon="arrow"></i></button>
     </section>
@@ -77,9 +86,11 @@
       <div class="setting-card"><div><h2>Wygląd panelu i zestawy</h2><p>Kolory, dźwięki, rozmiar i zapisane konfiguracje narzędzi.</p></div><button class="button button-secondary" data-tab="settings">Otwórz ustawienia <span>↗</span></button></div>
       <div class="setting-card"><div><h2>Wydajność i diagnostyka</h2><p>Automatyczna kolejka ogranicza równoczesne połączenia. Ukryte okno zużywa mniej zasobów.<br>Raport zapisuje błędy oraz bieżące CPU i RAM, bez haseł, kodów licencyjnych i treści wiadomości.</p></div><button class="button button-secondary" id="diagnostics-export">Zapisz raport</button></div>
       <div class="setting-card"><div><h2>Dane gry na tym urządzeniu</h2><p>Usunięcie ciasteczek i ustawień wyloguje Cię z MSP2.<br>Wymaga potwierdzenia.</p></div><button class="button button-danger" id="clear-data">Wyczyść dane</button></div>
-      <div class="note"><strong>TAPNOVA <span data-app-version>4.2.0</span> · created by 1TapGod</strong><br>Wydanie na Windows i macOS. Nowa aplikacja ma osobną sesję — przy pierwszym uruchomieniu zaloguj się ponownie.</div>
+      <div class="note"><strong>TAPNOVA <span data-app-version>4.3.0</span> · created by 1TapGod</strong><br>Wydanie na Windows i macOS. Nowa aplikacja ma osobną sesję — przy pierwszym uruchomieniu zaloguj się ponownie.</div>
     </section>
   </main>
+  <dialog id="account-dialog" aria-labelledby="account-title"><button class="icon-button" id="account-close" aria-label="Zamknij logowanie">×</button><span class="eyebrow">TAPNOVA / TWOJE KONTO</span><h2 id="account-title">Zaloguj do MSP2</h2><p id="account-message" role="status" aria-live="polite">Panel konta bez uruchamiania gry.</p><form id="account-form"><div id="account-fields"><label for="account-username">Nick gracza</label><input id="account-username" name="username" autocomplete="username" maxlength="100" required><label for="account-password">Hasło MSP2</label><input id="account-password" name="password" type="password" autocomplete="off" maxlength="256" required><label for="account-region">Serwer</label><select id="account-region"><option value="PL">Polska</option><option value="GB">Wielka Brytania</option><option value="US">USA</option><option value="CA">Kanada</option><option value="DE">Niemcy</option><option value="FR">Francja</option><option value="TR">Turcja</option><option value="NL">Holandia</option><option value="DK">Dania</option><option value="NO">Norwegia</option><option value="SE">Szwecja</option><option value="FI">Finlandia</option><option value="ES">Hiszpania</option><option value="IT">Włochy</option><option value="AU">Australia</option><option value="NZ">Nowa Zelandia</option></select></div><p class="tool-session-note">Hasło trafia bezpośrednio do serwerów MSP2. Nie zapisujemy hasła ani sesji na dysku. Po zamknięciu aplikacji zaloguj się ponownie. Otwarcie samej gry korzysta z jej osobnego formularza logowania.</p><button class="button button-primary" id="account-submit" type="submit">Zaloguj i otwórz bibliotekę</button></form><button class="button button-secondary" id="account-logout" hidden>Wyloguj konto z panelu</button></dialog>
+  <dialog id="tool-dialog" aria-labelledby="tool-title" aria-describedby="tool-description"><button class="icon-button" id="tool-close" aria-label="Zamknij szczegóły">×</button><span class="eyebrow" id="tool-dialog-category"></span><h2 id="tool-title"></h2><p id="tool-description"></p><ul id="tool-features"></ul><p class="tool-session-note">Zaloguj się przyciskiem „Zaloguj do MSP2” albo w otwartej grze. Samo otwarcie panelu nie wykonuje operacji na koncie.</p><button class="button button-primary" id="tool-open" data-tab="profile">Otwórz narzędzie ↗</button></dialog>
   <footer class="statusbar"><span id="status-text" role="status" aria-live="polite">Gotowe do gry</span><span>Twoja przestrzeń. Twój styl. <b>TAPNOVA</b></span></footer>
 </body>
 </html>

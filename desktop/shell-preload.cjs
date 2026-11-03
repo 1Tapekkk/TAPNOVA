@@ -20,5 +20,9 @@ contextBridge.exposeInMainWorld('tapnova', Object.freeze({
     const listener=(_event,state)=>callback(state);ipcRenderer.on('tapnova:presence',listener);
     return ()=>ipcRenderer.removeListener('tapnova:presence',listener);
   },
+  onAccount: callback => {
+    const listener=(_event,state)=>callback(state);ipcRenderer.on('tapnova:account',listener);
+    return ()=>ipcRenderer.removeListener('tapnova:account',listener);
+  },
   platform: process.platform
 }));

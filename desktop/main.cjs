@@ -16,7 +16,7 @@ let lastStatus = { kind:'idle', text:'Gotowe do gry' };
 let updates;
 let license;
 const WORKSPACE_URL='https://moviestarplanet2.com/.tapnova-workspace';
-let workspaceReady=false,workspaceProtocolInstalled=false;
+let workspaceReady=false,workspaceNetwork;
 const account=require('./account.cjs').createAccount({fetch:(...args)=>net.fetch(...args),notify:state=>{if(win&&!win.isDestroyed())win.webContents.send('tapnova:account',state)},changed:async value=>{
   if(!game||game.webContents.isDestroyed()||game.webContents.getURL()!==WORKSPACE_URL)return;
   if(value)await attachAccount(value);else{workspaceReady=false;showGame(false);await game.webContents.loadURL('about:blank')}
@@ -30,7 +30,7 @@ async function openWorkspace(tab){
   busy=true;
   try{
     if(!workspaceReady||game.webContents.getURL()!==WORKSPACE_URL){
-      loaded=false;showGame(true);await game.webContents.loadURL(WORKSPACE_URL);workspaceReady=true;
+      loaded=false;showGame(true);await game.webContents.loadURL('about:blank');await workspaceNetwork.enable();await game.webContents.loadURL(WORKSPACE_URL);workspaceReady=true;
     }
     if(!await attachAccount(account.lease()))throw Error('Workspace unavailable');
     showGame(true);
@@ -78,7 +78,7 @@ async function startGame() {
   if (!loaded) {
     busy = true;
     status('loading','Ładowanie MovieStarPlanet 2…');
-    try { await loadVisibleGame({webContents:game.webContents,url:GAME_URL,show:showGame}); loaded = true; status('ready','Gra otwarta · zaloguj się w MSP2'); }
+    try { await loadVisibleGame({webContents:game.webContents,url:GAME_URL,show:showGame,prepare:()=>workspaceNetwork.disable()}); loaded = true; status('ready','Gra otwarta · zaloguj się w MSP2'); }
     catch { status('error','Nie udało się wczytać gry. Sprawdź internet i ponów.'); }
     finally { busy = false; }
   }
@@ -171,10 +171,7 @@ async function createWindow() {
   gameSession.setPermissionCheckHandler(() => false);
   if(!smoke)gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:/^(https?|wss?):/.test(details.url)&&!license.isActive()}));
   if (smoke) gameSession.webRequest.onBeforeRequest((details,callback)=>callback({cancel:details.url!==WORKSPACE_URL&&!details.url.startsWith('data:')}));
-  if(!workspaceProtocolInstalled){await gameSession.protocol.handle('https',async request=>{
-    if(request.url===WORKSPACE_URL)return new Response(await fs.readFile(path.join(__dirname,'workspace.html')),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
-    return gameSession.fetch(request,{bypassCustomProtocolHandlers:true});
-  });workspaceProtocolInstalled=true}
+  if(!workspaceNetwork)workspaceNetwork=require('./workspace-network.cjs').createWorkspaceNetwork({session:gameSession,url:WORKSPACE_URL,readHTML:()=>fs.readFile(path.join(__dirname,'workspace.html'))});
   win = new BrowserWindow({width:1360,height:920,minWidth:960,minHeight:700,show:false,backgroundColor:'#101116',title:'TAPNOVA · created by 1TapGod',icon:path.join(__dirname,'generated/tapnova.png'),webPreferences:{preload:path.join(__dirname,'shell-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
   game = new WebContentsView({webPreferences:{session:gameSession,contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:true}});
   game.setBackgroundColor('#101116');
@@ -263,6 +260,19 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
       if (loaded) { showGame(true); game.webContents.reload(); }
       else await startGame();
       return {ok:true};
+    case 'repair-game': {
+      if(busy||!license?.isActive())return {ok:false};
+      busy=true;
+      try {
+        showGame(false);loaded=false;workspaceReady=false;
+        status('loading','Odświeżanie plików gry — dane konta zostają zachowane…');
+        await game.webContents.loadURL('about:blank');
+        await workspaceNetwork.disable();
+        await gameSession.clearCache();
+      }catch{status('error','Nie udało się odświeżyć cache gry. Zamknij aplikację i uruchom ponownie.');return {ok:false}}
+      finally{busy=false}
+      await startGame();return {ok:loaded};
+    }
     case 'tab': {
       if(!tabs.includes(value)) return {ok:false};
       if(account.lease()&&!loaded)return {ok:await openWorkspace(value)};

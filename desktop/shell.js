@@ -63,6 +63,7 @@ document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener(
 document.querySelector('[data-photo]').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('photo')}finally{button.disabled=false}});
 document.querySelector('[data-reload]').addEventListener('click',()=>command('reload'));
 document.querySelector('#clear-data').addEventListener('click',()=>command('clear-data'));
+document.querySelector('#repair-game').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('repair-game')}finally{button.disabled=false}});
 document.querySelector('#diagnostics-export').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await command('diagnostics-export')}finally{button.disabled=false}});
 api?.onStatus(displayStatus);
 if(api) command('status').then(value=>{if(value?.text)displayStatus(value);});

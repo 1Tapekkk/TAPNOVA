@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {createWorkspaceNetwork}=require('../desktop/workspace-network.cjs');
+const {loadVisibleGame}=require('../desktop/game-start.cjs');
+(async()=>{
+  const events=[];let handler;
+  const session={protocol:{async handle(s,h){assert.equal(s,'https');assert(!handler);handler=h;events.push('install')},async unhandle(s){assert.equal(s,'https');handler=null;events.push('remove')}},async fetch(request,options){assert.equal(options.bypassCustomProtocolHandlers,true);return new Response('api')}};
+  const url='https://moviestarplanet2.com/.tapnova-workspace';
+  const net=createWorkspaceNetwork({session,url,readHTML:async()=>'<h1>Account tools</h1>'});
+  assert.equal(handler,undefined,'Game starts without a protocol override');
+  await net.enable();await net.enable();assert.equal(events.length,1);
+  assert.match(await (await handler(new Request(url))).text(),/Account tools/);
+  assert.equal(await (await handler(new Request('https://eu.mspapis.com/profile'))).text(),'api');
+  await loadVisibleGame({webContents:{async loadURL(){assert.equal(handler,null,'Native network restored before Unity navigation');events.push('game')}},url:'https://moviestarplanet2.com/',show:v=>events.push(v?'visible':'hidden'),prepare:()=>net.disable()});
+  assert.deepEqual(events,['install','visible','remove','game']);
+  await net.disable();assert.equal(events.length,4);
+  await net.enable();assert.equal(net.installed,true,'Account panel can reopen');
+  await assert.rejects(loadVisibleGame({webContents:{loadURL(){throw Error('network')}},url,show:v=>events.push(v?'visible':'hidden'),prepare:()=>net.disable()}));
+  assert.equal(events.at(-1),'hidden');assert.equal(net.installed,false);
+  console.log('PASS: local workspace interception is absent during game navigation, repeat transitions and failure cleanup.');
+})().catch(e=>{console.error(e);process.exitCode=1});

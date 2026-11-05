@@ -81,11 +81,14 @@ const root = path.resolve(__dirname,'..');
       const shell=BrowserWindow.getAllWindows()[0].webContents;
       const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
       if(!wc)throw Error('Game WebContents missing');
+      const req=process.getBuiltinModule('module').createRequire(app.getAppPath()+'/package.json');
+      const network=req('./desktop/workspace-network.cjs').createWorkspaceNetwork({session:wc.session,url:'https://moviestarplanet2.com/.tapnova-workspace',readHTML:()=>process.getBuiltinModule('fs').readFileSync(app.getAppPath()+'/desktop/workspace.html')});
+      await network.enable();
       await wc.loadURL('https://moviestarplanet2.com/.tapnova-workspace');
       const localWorkspace=await wc.executeJavaScript('({title:document.title,unity:typeof window.unityInstance,adapter:typeof window.__tapnovaAttachSession})');
       if(localWorkspace.title!=='TAPNOVA · Panel konta'||localWorkspace.unity!=='undefined'||localWorkspace.adapter!=='function')throw Error('Local workspace handler failed');
       await wc.loadURL('about:blank');
-      wc.session.protocol.unhandle('https');
+      await network.disable();
       wc.session.webRequest.onBeforeRequest((_details,callback)=>callback({cancel:false}));
       await wc.session.protocol.handle('https',request=>{
         const url=new URL(request.url);
@@ -173,6 +176,22 @@ const root = path.resolve(__dirname,'..');
       return wc.executeJavaScript(`(()=>{const ok=window.__tapnovaAttachSession?.(${JSON.stringify({accessToken:token,profileId:'fixture-profile',username:'Gracz testowy',region:'PL'})});window.__xbPanel?.querySelector('[data-tab-id="homes"]')?.click();return {ok,authenticated:window.__xbPanel?.dataset.tnAuth,workspace:window.__xbPanel?.dataset.workspace,selected:window.__xbPanel?.querySelector('[data-tab-id="homes"]')?.getAttribute('aria-current'),unity:typeof window.unityInstance}})()`);
     });
     assert.deepEqual(workspace,{ok:true,authenticated:'true',workspace:'true',selected:'page',unity:'undefined'},'Account tools work in local page without Unity');
+    await application.evaluate(async({webContents,BrowserWindow})=>{
+      const shell=BrowserWindow.getAllWindows()[0].webContents;
+      const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
+      await wc.session.cookies.set({url:'https://moviestarplanet2.com',name:'repair-fixture',value:'retained',secure:true});
+      await wc.executeJavaScript("localStorage.setItem('repair-fixture','retained')");
+    });
+    await page.evaluate(()=>window.tapnova.command('repair-game'));
+    const retained=await application.evaluate(async({webContents,BrowserWindow})=>{
+      const shell=BrowserWindow.getAllWindows()[0].webContents;
+      const wc=webContents.getAllWebContents().find(w=>w.id!==shell.id&&w.getType()==='window');
+      const blank=wc.getURL()==='about:blank';
+      const cookies=await wc.session.cookies.get({name:'repair-fixture'});
+      await wc.loadURL('https://moviestarplanet2.com/.tapnova-workspace');
+      return {blank,cookie:cookies[0]?.value,setting:await wc.executeJavaScript("localStorage.getItem('repair-fixture')")};
+    });
+    assert.deepEqual(retained,{blank:true,cookie:'retained',setting:'retained'},'Repair stops the game and preserves cookies and local settings');
     // Exercise the actual electron-updater transport against a loopback fixture.
     // Fake installers are checksum-tested, never executed; the real user profile is not used.
     const transport=await application.evaluate(async({app})=>{

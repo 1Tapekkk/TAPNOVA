@@ -19,7 +19,7 @@
     const card=document.createElement('button');card.type='button';card.className='tool-card';card.dataset.tool=id;card.dataset.group=group;
     card.setAttribute('aria-label','Otwórz: '+title);card.setAttribute('aria-haspopup','dialog');
     card.innerHTML=`<span class="tool-symbol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">${paths[icon]}</svg></span><span class="tool-tag">MSP2</span><strong></strong><span class="tool-category"></span><span class="tool-arrow" aria-hidden="true">↗</span><svg class="tool-watermark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width=".65" aria-hidden="true">${paths[icon]}</svg>`;
-    card.querySelector('strong').textContent=title;card.querySelector('.tool-category').textContent=label;
+    card.querySelector('strong').textContent=title;card.querySelector('.tool-category').textContent=description;
     card.addEventListener('click',()=>{
       document.querySelector('#tool-title').textContent=title;document.querySelector('#tool-description').textContent=description;
       document.querySelector('#tool-dialog-category').textContent=label;

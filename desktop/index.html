@@ -40,7 +40,7 @@
       <button class="nav-item" data-page="help"><i data-icon="help"></i>Jak zacząć?</button>
       <button class="nav-item" data-page="settings"><i data-icon="settings"></i>Ustawienia aplikacji</button>
       <button id="update-badge" class="update-badge" hidden>Nowa wersja dostępna</button>
-      <div class="edition"><span class="edition-mark">TN</span><span>DESKTOP EDITION<small>Wersja <span data-app-version>4.3.1</span> <span id="platform"></span></small></span></div>
+      <div class="edition"><span class="edition-mark">TN</span><span>DESKTOP EDITION<small>Wersja <span data-app-version>4.3.2</span> <span id="platform"></span></small></span></div>
     </div>
   </aside>
 
@@ -54,17 +54,25 @@
 
       <div class="library-layout">
         <section class="hero library-intro" aria-labelledby="welcome-title">
-          <span class="eyebrow">TAPNOVA / TWOJE CENTRUM MSP2</span>
-          <h1 id="welcome-title">TWOJA GRA.<br>TWÓJ <em>WYBÓR.</em></h1>
-          <p>Wybierz narzędzie. Otwórz swój panel.<br>Wszystko, czego potrzebujesz, w jednym miejscu.</p>
-          <div class="library-actions"><button class="button button-primary" data-game>Otwórz MSP2 <i data-icon="arrow"></i></button><button class="button button-secondary" data-page="help">Jak zacząć?</button></div>
-          <div class="library-note"><i data-icon="shield"></i><span>Twoje konto. Twoja kontrola.<br>Każda operacja na Twoich zasadach.</span></div>
-          <div class="library-signature"><img src="generated/tapnova.svg" alt="" width="42" height="42"><span>STWORZONE DLA TWOJEJ GRY<small>created by 1TapGod</small></span></div>
+          <div class="dashboard-avatar" aria-hidden="true"><i data-icon="star"></i></div>
+          <div class="dashboard-welcome"><span class="eyebrow">TWOJE CENTRUM MSP2</span>
+          <h1 id="welcome-title">Miło Cię widzieć<span class="gold-dot">.</span></h1>
+          <p id="dashboard-account-copy">Wszystko gotowe na Twoją następną sesję.</p>
+          <span class="dashboard-session" id="dashboard-session">Zaloguj się, aby połączyć konto</span></div>
+          <div class="library-actions"><button class="button button-primary" data-game><i data-icon="play"></i>Otwórz MSP2</button><button class="button button-secondary" data-page="help">Jak zacząć? <i data-icon="arrow"></i></button></div>
+        </section>
+        <section class="dashboard-shortcuts" aria-labelledby="shortcuts-title">
+          <div class="dashboard-section-heading"><h2 id="shortcuts-title">Szybki dostęp</h2><span>Twoje codzienne narzędzia</span></div>
+          <div class="featured-grid">
+            <button class="featured-card" data-tab="auto"><span class="featured-symbol"><i data-icon="bolt"></i></span><span><strong>Aktywności</strong><small>Zadania i kontrola postępu w jednym miejscu</small></span><i data-icon="arrow"></i></button>
+            <button class="featured-card" data-tab="bots"><span class="featured-symbol"><i data-icon="star"></i></span><span><strong>Autografy</strong><small>Wybierz odbiorców i zarządzaj kolejką</small></span><i data-icon="arrow"></i></button>
+          </div>
         </section>
         <section class="library-browser" aria-label="Biblioteka narzędzi">
-          <div class="library-search"><i data-icon="help"></i><label class="sr-only" for="tool-search">Szukaj narzędzia</label><input type="search" id="tool-search" placeholder="Znajdź swoje narzędzie…" autocomplete="off"><kbd>/</kbd></div>
+          <div class="library-toolbar"><div class="dashboard-section-heading"><h2>Wszystkie narzędzia</h2><span>Wybierz, czym chcesz się zająć</span></div>
+          <div class="library-search"><i data-icon="search"></i><label class="sr-only" for="tool-search">Szukaj narzędzia</label><input type="search" id="tool-search" placeholder="Szukaj narzędzia…" autocomplete="off"><kbd>/</kbd></div></div>
           <div class="library-filters" role="group" aria-label="Kategorie narzędzi"><button type="button" data-tool-filter="all" aria-pressed="true">Wszystko</button><button type="button" data-tool-filter="account" aria-pressed="false">Konto</button><button type="button" data-tool-filter="social" aria-pressed="false">Społeczność</button><button type="button" data-tool-filter="tools" aria-pressed="false">Narzędzia</button></div>
-          <div class="library-meta"><span id="tool-count" role="status" aria-live="polite"></span><span>WYBIERZ I OTWÓRZ ↗</span></div>
+          <div class="library-meta"><span id="tool-count" role="status" aria-live="polite"></span><span>TWÓJ PANEL · TWÓJ WYBÓR</span></div>
           <div class="tool-grid" id="tool-grid"></div>
           <div class="tool-empty" id="tool-empty" hidden><h2>Nie znaleziono narzędzia</h2><p>Spróbuj innej nazwy lub wyczyść filtry.</p><button class="button button-secondary" id="tool-reset">Wyczyść wyszukiwanie</button></div>
         </section>
@@ -87,7 +95,7 @@
       <div class="setting-card"><div><h2>Wydajność i diagnostyka</h2><p>Automatyczna kolejka ogranicza równoczesne połączenia. Ukryte okno zużywa mniej zasobów.<br>Raport zapisuje błędy oraz bieżące CPU i RAM, bez haseł, kodów licencyjnych i treści wiadomości.</p></div><button class="button button-secondary" id="diagnostics-export">Zapisz raport</button></div>
       <div class="setting-card"><div><h2>Gra zatrzymuje się podczas ładowania?</h2><p>Pobierz pliki gry ponownie i uruchom MSP2 od nowa.<br>Licencja, ciasteczka i ustawienia zostają zachowane.</p></div><button class="button button-secondary" id="repair-game">Napraw wczytywanie</button></div>
       <div class="setting-card"><div><h2>Dane gry na tym urządzeniu</h2><p>Usunięcie ciasteczek i ustawień wyloguje Cię z MSP2.<br>Wymaga potwierdzenia.</p></div><button class="button button-danger" id="clear-data">Wyczyść dane</button></div>
-      <div class="note"><strong>TAPNOVA <span data-app-version>4.3.1</span> · created by 1TapGod</strong><br>Wydanie na Windows i macOS. Nowa aplikacja ma osobną sesję — przy pierwszym uruchomieniu zaloguj się ponownie.</div>
+      <div class="note"><strong>TAPNOVA <span data-app-version>4.3.2</span> · created by 1TapGod</strong><br>Wydanie na Windows i macOS. Nowa aplikacja ma osobną sesję — przy pierwszym uruchomieniu zaloguj się ponownie.</div>
     </section>
   </main>
   <dialog id="account-dialog" aria-labelledby="account-title"><button class="icon-button" id="account-close" aria-label="Zamknij logowanie">×</button><span class="eyebrow">TAPNOVA / TWOJE KONTO</span><h2 id="account-title">Zaloguj do MSP2</h2><p id="account-message" role="status" aria-live="polite">Panel konta bez uruchamiania gry.</p><form id="account-form"><div id="account-fields"><label for="account-username">Nick gracza</label><input id="account-username" name="username" autocomplete="username" maxlength="100" required><label for="account-password">Hasło MSP2</label><input id="account-password" name="password" type="password" autocomplete="off" maxlength="256" required><label for="account-region">Serwer</label><select id="account-region"><option value="PL">Polska</option><option value="GB">Wielka Brytania</option><option value="US">USA</option><option value="CA">Kanada</option><option value="DE">Niemcy</option><option value="FR">Francja</option><option value="TR">Turcja</option><option value="NL">Holandia</option><option value="DK">Dania</option><option value="NO">Norwegia</option><option value="SE">Szwecja</option><option value="FI">Finlandia</option><option value="ES">Hiszpania</option><option value="IT">Włochy</option><option value="AU">Australia</option><option value="NZ">Nowa Zelandia</option></select></div><p class="tool-session-note">Hasło trafia bezpośrednio do serwerów MSP2. Nie zapisujemy hasła ani sesji na dysku. Po zamknięciu aplikacji zaloguj się ponownie. Otwarcie samej gry korzysta z jej osobnego formularza logowania.</p><button class="button button-primary" id="account-submit" type="submit">Zaloguj i otwórz bibliotekę</button></form><button class="button button-secondary" id="account-logout" hidden>Wyloguj konto z panelu</button></dialog>

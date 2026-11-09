@@ -6,6 +6,11 @@
   function display(state){
     if(!state?.phase)return;active=state.active===true;
     button.textContent=active?state.username+' · '+state.region:'Zaloguj do MSP2';
+    document.querySelector('#welcome-title').textContent=active?'Cześć, '+state.username+'!':'Miło Cię widzieć.';
+    document.querySelector('#dashboard-account-copy').textContent=active?'Twoje konto jest połączone. Wybierz narzędzie i zaczynajmy.':'Wszystko gotowe na Twoją następną sesję.';
+    const session=document.querySelector('#dashboard-session');
+    session.textContent=active?'Konto połączone · '+state.region:'Zaloguj się, aby połączyć konto';
+    session.dataset.active=String(active);
     document.querySelector('#account-logout').hidden=!active;
     document.querySelector('#account-fields').hidden=active;submit.hidden=active;
     message.textContent=active?'Konto połączone. Wybierz narzędzie z biblioteki. Funkcje pokoju wymagają otwartej gry.':state.phase==='expired'?'Sesja MSP2 wygasła lub odświeżenie się nie powiodło. Zaloguj się ponownie.':'Zaloguj się, aby korzystać z panelu bez uruchamiania gry.';

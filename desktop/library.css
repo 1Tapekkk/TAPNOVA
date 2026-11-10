@@ -97,8 +97,8 @@ main { background:radial-gradient(ellipse at 90% 0,#4a275b22,transparent 58%),va
 .note,.keychain-help { background:#21172f; border-color:#463353; }
 .note strong { color:#e6d4ef; }
 .update-badge { color:var(--accent); border-color:#8d6b3c; background:#f0c56812; }
-#tool-dialog,#account-dialog,#license-gate { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 48px); overflow:auto; padding:32px; background:radial-gradient(ellipse at 100% 0,#4e2e6140,transparent 65%),#1a1228; color:var(--text); border:1px solid #60456d; border-radius:20px; box-shadow:0 30px 100px #0009; }
-#tool-dialog::backdrop,#account-dialog::backdrop,#license-gate::backdrop { background:#0b0613cf; backdrop-filter:blur(7px); }
+#tool-dialog,#account-dialog,#license-gate,#diagnostics-dialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100vh - 48px); overflow:auto; padding:32px; background:radial-gradient(ellipse at 100% 0,#4e2e6140,transparent 65%),#1a1228; color:var(--text); border:1px solid #60456d; border-radius:20px; box-shadow:0 30px 100px #0009; }
+#tool-dialog::backdrop,#account-dialog::backdrop,#license-gate::backdrop,#diagnostics-dialog::backdrop { background:#0b0613cf; backdrop-filter:blur(7px); }
 #tool-close,#account-close { position:absolute; top:16px; right:16px; font-size:23px; }
 #tool-title,#account-title { font-size:29px; letter-spacing:-1px; margin:20px 25px 14px 0; }
 #tool-description,#account-message { color:var(--muted); line-height:1.8; font-size:12px; }
@@ -108,8 +108,15 @@ main { background:radial-gradient(ellipse at 90% 0,#4a275b22,transparent 58%),va
 #tool-open,#account-submit,#account-logout { width:100%; }
 .account-open { max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; padding:10px 12px; border-color:#927143; color:var(--accent); }
 #account-fields label { display:block; margin:16px 0 8px; color:#c4b2d7; font-size:12px; }
-#account-fields input,#account-fields select,#license-gate input { width:100%; padding:13px; background:#120c1e; border:1px solid #503b60; border-radius:10px; color:var(--text); font:inherit; }
-#account-fields input:focus,#account-fields select:focus,#license-gate input:focus { outline:2px solid var(--accent); outline-offset:2px; }
+#account-fields input,#account-fields select,#license-gate input,#saved-profile { width:100%; padding:13px; background:#120c1e; border:1px solid #503b60; border-radius:10px; color:var(--text); font:inherit; }
+#account-fields input:focus,#account-fields select:focus,#license-gate input:focus,#saved-profile:focus { outline:2px solid var(--accent); outline-offset:2px; }
+#diagnostics-dialog { width:min(720px,calc(100vw - 32px)); }
+#diagnostics-close { position:absolute; right:16px; top:16px; }
+#diagnostics-title { font-size:27px; letter-spacing:-.7px; margin:8px 32px 16px 0; }
+#diagnostics-dialog p { color:#c4b2d7; line-height:1.7; font-size:13px; }
+#diagnostics-refresh { margin-top:10px; }
+#diagnostics-list { margin-top:20px; }
+#profile-picker label { color:#c4b2d7; font-size:12px; }
 #license-gate .license-privacy { color:var(--muted); }
 @media(min-width:1600px) { .tool-grid { grid-template-columns:repeat(5,minmax(0,1fr)); } }
 @media(max-width:1200px) { .tool-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .dashboard-avatar { flex-basis:64px; height:64px; border-radius:20px; } .library-intro.hero { gap:18px; padding:24px; } }

@@ -1,9 +1,9 @@
 name: Test Cloudflare licensing
 on:
   push:
-    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/*Discord*', 'scripts/Check-Licenses.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
+    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/*Discord*', 'scripts/*License*.cjs', 'scripts/*Admin*.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
   pull_request:
-    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/*Discord*', 'scripts/Check-Licenses.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
+    paths: ['license-server/**', 'scripts/*Cloudflare*', 'scripts/*Discord*', 'scripts/*License*.cjs', 'scripts/*Admin*.cjs', 'desktop/license.cjs', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.github/workflows/licenses.yml']
 permissions:
   contents: read
 jobs:
@@ -23,3 +23,4 @@ jobs:
       - run: pnpm test:cloudflare
       - run: pnpm test:discord
       - run: node scripts/Check-Licenses.cjs
+      - run: pnpm test:admin

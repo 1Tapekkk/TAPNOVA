@@ -14,7 +14,7 @@ async function main(){
   try{const r=spawnSync(process.execPath,[wrangler,'d1','execute','DB','--remote','--file',transfer,'--config',config],{windowsHide:true,stdio:'pipe'});if(r.status!==0)throw Error('Cloudflare owner session operation failed. Check Wrangler login.')}finally{fs.rmSync(transfer,{force:true})}
  }
  try{
-  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+180000},'${secrets.ADMIN_VERIFIER}');`);
+  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+180000},'${secrets.ADMIN_VERIFIER}:'||(SELECT version FROM admin_security WHERE id=1));`);
   const origin='https://tapnova-licenses.tapnova-1tapekkk.workers.dev';
   const r=await fetch(origin+'/api/admin/discord/commands',{method:'POST',headers:{origin,'x-tapnova-admin':'1',cookie:'tn_admin='+token,'content-type':'application/json'},body:'{}',redirect:'error',signal:AbortSignal.timeout(90000)});
   const data=await r.json();if(!r.ok)throw Error('Command registration failed: '+r.status+' '+data.error);

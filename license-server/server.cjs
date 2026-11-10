@@ -20,17 +20,25 @@ function createServer({config,dataDir,origin,secure=true}){
       if(!route.startsWith('/api/'))return send(res,404,{error:'not-found'});
       if(req.method==='POST'&&!String(req.headers['content-type']).startsWith('application/json'))return send(res,415,{error:'json-required'});
       if(route.startsWith('/api/admin')){
+        const {sqliteAdapter,adminService}=await import('./admin-service.mjs'),{securityService}=await import('./admin-security.mjs');const db=sqliteAdapter(store.db),sec=await securityService(db,config.secret),securityState=await sec.state();
+        const admin=await adminService(db,config.secret,value=>crypto.createHmac('sha256',config.secret).update(value).digest('hex'));
         if(req.headers.origin&&req.headers.origin!==origin)return send(res,403,{error:'origin'});
         if(req.method==='POST'&&(req.headers.origin!==origin||req.headers['x-tapnova-admin']!=='1'))return send(res,403,{error:'csrf'});
         if(route==='/api/admin/login'&&req.method==='POST'){
           if(!rate(req,'login',8,15*60000))return send(res,429,{error:'rate-limit'});
           const data=await body(req);const value=await scrypt(String(data.password||'').slice(0,1024),config.salt,64);
           if(!crypto.timingSafeEqual(value,Buffer.from(config.passwordHash,'hex')))return send(res,401,{error:'login'});
-          const token=crypto.randomBytes(32).toString('base64url');sessions.set(token,{expires:Date.now()+12*3600000});res.setHeader('set-cookie',`tn_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secure?'; Secure':''}`);return send(res,200,{ok:true});
+          if(securityState.secret&&!await sec.verify(data.otp))return send(res,403,{error:'2fa-code'});
+          const token=crypto.randomBytes(32).toString('base64url');sessions.set(token,{expires:Date.now()+12*3600000,version:securityState.version});res.setHeader('set-cookie',`tn_admin=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${secure?'; Secure':''}`);return send(res,200,{ok:true});
         }
-        const token=auth(req);if(!token)return send(res,401,{error:'login'});
+        const token=auth(req);if(!token||sessions.get(token).version!==securityState.version)return send(res,401,{error:'login'});
+        if(route==='/api/admin/security'&&req.method==='GET')return send(res,200,{enabled:!!securityState.secret});
+        if(route==='/api/admin/history'&&req.method==='GET')return send(res,200,await admin.history(url.searchParams));
+        if(route==='/api/admin/reminders'&&req.method==='GET')return send(res,200,{supported:false,enabled:false,channel:''});
         if(route==='/api/admin/licenses'&&req.method==='GET')return send(res,200,{licenses:store.list(),audit:store.audit(),serverTime:Date.now()});
         const data=req.method==='POST'?await body(req):{};
+        if(route.startsWith('/api/admin/security/')&&req.method==='POST'){if(!rate(req,'2fa',8,15*60000))return send(res,429,{error:'rate-limit'});const value=await scrypt(String(data.password||'').slice(0,1024),config.salt,64);if(!crypto.timingSafeEqual(value,Buffer.from(config.passwordHash,'hex')))return send(res,403,{error:'login'});let result;if(route.endsWith('/begin'))result=await sec.begin(token);else if(route.endsWith('/enable'))result=await sec.enable(token,data.otp);else if(route.endsWith('/disable'))result=await sec.disable(data.otp);else return send(res,404,{error:'not-found'});sessions.get(token).version=(await sec.state()).version;return send(res,200,result)}
+        if(route==='/api/admin/batch'&&req.method==='POST')return send(res,201,await admin.batch(data));
         if(route==='/api/admin/logout'&&req.method==='POST'){sessions.delete(token);res.setHeader('set-cookie','tn_admin=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'+(secure?'; Secure':''));return send(res,200,{ok:true})}
         if(route==='/api/admin/licenses'&&req.method==='POST')return send(res,201,store.create(data));
         const match=route.match(/^\/api\/admin\/licenses\/([0-9a-f-]{36})$/);if(match&&req.method==='POST')return send(res,200,store.change(match[1],data));

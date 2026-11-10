@@ -10,6 +10,7 @@ function createStore(file,secret,now=()=>Date.now()){
     CREATE TABLE IF NOT EXISTS devices(id TEXT PRIMARY KEY,license_id TEXT NOT NULL REFERENCES licenses(id) ON DELETE CASCADE,device_hash TEXT NOT NULL,label TEXT NOT NULL,platform TEXT NOT NULL,token_hash TEXT UNIQUE NOT NULL,created INTEGER NOT NULL,last_seen INTEGER NOT NULL,UNIQUE(license_id,device_hash));
     CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY,at INTEGER NOT NULL,action TEXT NOT NULL,license_id TEXT,detail TEXT);
     CREATE INDEX IF NOT EXISTS license_devices ON devices(license_id);`);
+  if(!db.prepare('PRAGMA table_info(licenses)').all().some(c=>c.name==='notes'))db.exec(require('node:fs').readFileSync(require('node:path').join(__dirname,'cloudflare/migrations/0007_admin_tools.sql'),'utf8'));
   const hash=value=>crypto.createHmac('sha256',secret).update(value).digest('hex');
   const log=(action,id,detail='')=>db.prepare('INSERT INTO audit(at,action,license_id,detail) VALUES(?,?,?,?)').run(now(),action,id,detail);
   const transaction=fn=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}};
@@ -24,10 +25,11 @@ function createStore(file,secret,now=()=>Date.now()){
   return {
     close:()=>db.close(),db,
     create({label,durationDays=30,maxDevices=1}){label=clean(label);days(durationDays);limit(maxDevices);const k=key(),id=crypto.randomUUID();transaction(()=>{db.prepare('INSERT INTO licenses(id,key_hash,hint,label,duration,max_devices,created) VALUES(?,?,?,?,?,?,?)').run(id,hash(k),hint(k),label,durationDays,maxDevices,now());log('created',id)});return {key:k,...publicLicense(license(id))}},
-    list(){return db.prepare('SELECT * FROM licenses ORDER BY created DESC').all().map(l=>({...publicLicense(l),devices:db.prepare('SELECT id,label,platform,created,last_seen AS lastSeen FROM devices WHERE license_id=?').all(l.id).map(d=>({...d,online:now()-d.lastSeen<45000}))}))},
+    list(){return db.prepare('SELECT * FROM licenses ORDER BY created DESC').all().map(l=>({...publicLicense(l),notes:l.notes||'',devices:db.prepare('SELECT id,label,platform,created,last_seen AS lastSeen FROM devices WHERE license_id=?').all(l.id).map(d=>({...d,online:now()-d.lastSeen<45000}))}))},
     audit(){return db.prepare('SELECT * FROM audit ORDER BY id DESC LIMIT 100').all()},
-    change(id,{action,durationDays,maxDevices,deviceId}){return transaction(()=>{const l=license(id);let newKey;
-      if(action==='revoke'){db.prepare('UPDATE licenses SET revoked=1 WHERE id=?').run(id);db.prepare('DELETE FROM devices WHERE license_id=?').run(id)}
+    change(id,{action,durationDays,maxDevices,deviceId,label,notes}){return transaction(()=>{const l=license(id);let newKey;
+      if(action==='edit'){label=clean(label);if(typeof notes!=='string'||notes.length>2000)invalid('invalid-input');db.prepare('UPDATE licenses SET label=?,notes=? WHERE id=?').run(label,notes.trim(),id)}
+      else if(action==='revoke'){db.prepare('UPDATE licenses SET revoked=1 WHERE id=?').run(id);db.prepare('DELETE FROM devices WHERE license_id=?').run(id)}
       else if(action==='enable')db.prepare('UPDATE licenses SET revoked=0 WHERE id=?').run(id);
       else if(action==='extend'){days(durationDays);const expires=durationDays===0?null:Math.max(now(),l.expires||now())+durationDays*DAY;db.prepare('UPDATE licenses SET duration=?,expires=?,activated=COALESCE(activated,?) WHERE id=?').run(durationDays,expires,now(),id)}
       else if(action==='devices'){limit(maxDevices);const count=db.prepare('SELECT count(*) AS n FROM devices WHERE license_id=?').get(id).n;if(count>maxDevices)invalid('remove-devices-first');db.prepare('UPDATE licenses SET max_devices=? WHERE id=?').run(maxDevices,id)}

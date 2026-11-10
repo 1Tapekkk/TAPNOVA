@@ -18,7 +18,7 @@ async function main(){
   const health=await fetch(origin+'/health');assert.equal(health.status,200);assert.equal((await health.json()).storage,'d1');
   assert.equal((await fetch(origin+'/api/admin/licenses')).status,401);
   assert.equal((await fetch(origin+'/.data/config.json')).status,404);
-  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+600000},'${secrets.ADMIN_VERIFIER}');`);
+  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+600000},'${secrets.ADMIN_VERIFIER}:'||(SELECT version FROM admin_security WHERE id=1));`);
   license=await post('/api/admin/licenses',{label:'SMOKE Cloudflare — temporary',durationDays:7,maxDevices:2});
   for(const platform of ['win32','darwin']){
    let saved;client=createLicense({serverUrl:origin,fetch,platform,storage:{read:async()=>saved,write:async v=>{saved=v},clear:async()=>{saved=null}}});

@@ -1,3 +1,6 @@
+import {securityService} from '../admin-security.mjs';
+import {adminService} from '../admin-service.mjs';
+import {reminderSettings,configureReminders,syncReminders} from './reminders.mjs';
 import {createStore,fail} from './store.mjs';
 import {random,sha,hasher,equal} from './crypto.mjs';
 import {discordFetch,syncDiscord,registerDiscordCommands,ensureMemberRole} from './discord.mjs';
@@ -34,6 +37,7 @@ export default {
       const ip=request.headers.get('CF-Connecting-IP')||'local';
       const hash=await hasher(env.LICENSE_SECRET);
       if(path.startsWith('/api/admin/')){
+        const sec=await securityService(env.DB,env.LICENSE_SECRET);const securityState=await sec.state();const authVersion=env.ADMIN_VERIFIER+':'+securityState.version;
         const origin=request.headers.get('origin');
         if(origin&&origin!==url.origin)fail('origin',403);
         if(post&&(origin!==url.origin||request.headers.get('x-tapnova-admin')!=='1'))fail('csrf',403);
@@ -42,13 +46,18 @@ export default {
           await rate(env.LOGIN_LIMIT,ip);
           const data=await body(request);
           if(typeof data.proof!=='string'||!/^[a-f0-9]{64}$/.test(data.proof)||!equal(await sha(data.proof),env.ADMIN_VERIFIER))fail('login',401);
-          const token=random();await env.DB.prepare('INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES(?,?,?)').bind(await hash(token),Date.now()+43200000,env.ADMIN_VERIFIER).run();
+          if(securityState.secret&&!await sec.verify(data.otp))fail('2fa-code',403);
+          const token=random();await env.DB.prepare('INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES(?,?,?)').bind(await hash(token),Date.now()+43200000,authVersion).run();
           return json({ok:true},200,{'set-cookie':cookie(token,url.protocol==='https:')});
         }
         const token=request.headers.get('cookie')?.match(/(?:^|;\s*)tn_admin=([a-f0-9]{64})(?:;|$)/)?.[1];
         const th=token?await hash(token):'';
-        const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),env.ADMIN_VERIFIER).first();
+        const session=token&&await env.DB.prepare('SELECT expires FROM admin_sessions WHERE token_hash=? AND expires>? AND auth_version=?').bind(th,Date.now(),authVersion).first();
         if(!session)fail('login',401);
+        if(path==='/api/admin/security'&&request.method==='GET')return json({enabled:!!securityState.secret});
+        if(path.startsWith('/api/admin/security/')&&post){await rate(env.LOGIN_LIMIT,'2fa:'+ip);const data=await body(request);if(typeof data.proof!=='string'||!equal(await sha(data.proof),env.ADMIN_VERIFIER))fail('login',403);if(path.endsWith('/begin'))return json(await sec.begin(th));if(path.endsWith('/enable')){const result=await sec.enable(th,data.otp);await env.DB.prepare('UPDATE admin_sessions SET auth_version=? WHERE token_hash=?').bind(env.ADMIN_VERIFIER+':'+(await sec.state()).version,th).run();return json(result)}if(path.endsWith('/disable')){const result=await sec.disable(data.otp);await env.DB.prepare('UPDATE admin_sessions SET auth_version=? WHERE token_hash=?').bind(env.ADMIN_VERIFIER+':'+(await sec.state()).version,th).run();return json(result)}}
+        if(path==='/api/admin/reminders'&&request.method==='GET')return json(await reminderSettings(env));
+        if(path==='/api/admin/reminders'&&post)return json(await configureReminders(env,await body(request)));
         if(path==='/api/admin/discord/server'&&(post||request.method==='GET')){await rate(env.DISCORD_LIMIT,'server-config');return json(post?await configureServer(env,await body(request)):await serverSnapshot(env))}
         if(path==='/api/admin/discord/member-role'&&(post||request.method==='GET')){await rate(env.DISCORD_LIMIT,'member-role');if(post)await body(request);return json(await ensureMemberRole(env,post))}
         if(path==='/api/admin/discord/welcome'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'welcome-status');return json(await welcomeStatus(env,true))}
@@ -60,6 +69,9 @@ export default {
         if(path==='/api/admin/discord/draft'&&request.method==='GET'){await rate(env.DISCORD_LIMIT,'admin-draft-inspection');return json(await inspectDiscordDraft(env,url.searchParams.get('id')))}
         if(path==='/api/admin/logout'&&post){await body(request);await env.DB.prepare('DELETE FROM admin_sessions WHERE token_hash=?').bind(th).run();return json({ok:true},200,{'set-cookie':cookie('',url.protocol==='https:')})}
         const store=await createStore(env.DB,env.LICENSE_SECRET);
+        const admin=await adminService(env.DB,env.LICENSE_SECRET,hash);
+        if(path==='/api/admin/history'&&request.method==='GET')return json(await admin.history(url.searchParams));
+        if(path==='/api/admin/batch'&&post)return json(await admin.batch(await body(request)),201);
         if(path==='/api/admin/licenses'&&request.method==='GET')return json(await store.list());
         if(path==='/api/admin/licenses'&&post)return json(await store.create(await body(request)),201);
         const match=path.match(/^\/api\/admin\/licenses\/([0-9a-f-]{36})$/);
@@ -78,11 +90,12 @@ export default {
   },
   async scheduled(event,env){
     if(event.cron==='* * * * *'){await syncWelcomes(env);return}
-    if(event.cron==='*/5 * * * *'){await syncDiscord(env);return}
+    if(event.cron==='*/5 * * * *'){await Promise.all([syncDiscord(env),syncReminders(env)]);return}
     await env.DB.batch([
       env.DB.prepare('DELETE FROM admin_sessions WHERE expires<?').bind(Date.now()),
       env.DB.prepare('DELETE FROM discord_drafts WHERE expires<?').bind(Date.now()-86400000),
-      env.DB.prepare('DELETE FROM audit WHERE at<?').bind(Date.now()-90*86400000)
+      env.DB.prepare('DELETE FROM admin_batches WHERE expires<?').bind(Date.now()),
+      env.DB.prepare('UPDATE admin_security SET pending=NULL,pending_owner=NULL WHERE pending_until<?').bind(Date.now())
     ]);
   }
 };

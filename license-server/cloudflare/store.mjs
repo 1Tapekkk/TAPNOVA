@@ -21,12 +21,13 @@ export async function createStore(db,secret) {
     async list() {
       const [ls,ds,au]=await batch([q('SELECT * FROM licenses ORDER BY created DESC'),q('SELECT id,license_id,label,platform,created,last_seen AS lastSeen FROM devices'),q('SELECT * FROM audit ORDER BY id DESC LIMIT 100')]);
       const grouped=new Map();for(const d of ds.results){const id=d.license_id;delete d.license_id;if(!grouped.has(id))grouped.set(id,[]);grouped.get(id).push({...d,online:Date.now()-d.lastSeen<45000})}
-      return {licenses:ls.results.map(l=>({...publicLicense(l),devices:grouped.get(l.id)||[]})),audit:au.results,serverTime:Date.now()};
+      return {licenses:ls.results.map(l=>({...publicLicense(l),notes:l.notes||'',devices:grouped.get(l.id)||[]})),audit:au.results,serverTime:Date.now()};
     },
-    async change(id,{action,durationDays,maxDevices,deviceId}) {
+    async change(id,{action,durationDays,maxDevices,deviceId,label,notes}) {
       if(!await q('SELECT id FROM licenses WHERE id=?',id).first())fail('not-found',404);
       const stmts=[];let key;
-      if(action==='revoke'){stmts.push(q('UPDATE licenses SET revoked=1 WHERE id=?',id),q('DELETE FROM devices WHERE license_id=?',id))}
+      if(action==='edit'){label=clean(label);if(typeof notes!=='string'||notes.length>2000)fail('invalid-input');stmts.push(q('UPDATE licenses SET label=?,notes=? WHERE id=?',label,notes.trim(),id))}
+      else if(action==='revoke'){stmts.push(q('UPDATE licenses SET revoked=1 WHERE id=?',id),q('DELETE FROM devices WHERE license_id=?',id))}
       else if(action==='enable')stmts.push(q('UPDATE licenses SET revoked=0 WHERE id=?',id));
       else if(action==='extend'){days(durationDays);const now=Date.now();stmts.push(q('UPDATE licenses SET duration=?,expires=CASE WHEN ?=0 THEN NULL ELSE MAX(?,COALESCE(expires,?))+? END,activated=COALESCE(activated,?) WHERE id=?',durationDays,durationDays,now,now,durationDays*86400000,now,id))}
       else if(action==='devices')stmts.push(q('UPDATE licenses SET max_devices=? WHERE id=?',limit(maxDevices),id));

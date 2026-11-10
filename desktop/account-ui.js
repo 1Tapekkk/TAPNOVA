@@ -11,7 +11,7 @@
     const session=document.querySelector('#dashboard-session');
     session.textContent=active?'Konto połączone · '+state.region:'Zaloguj się, aby połączyć konto';
     session.dataset.active=String(active);
-    document.querySelector('#account-logout').hidden=!active;
+    document.querySelector('#account-logout').hidden=!active;document.querySelector('#account-switch').hidden=!active;document.querySelector('#profile-picker').hidden=active;
     document.querySelector('#account-fields').hidden=active;submit.hidden=active;
     message.textContent=active?'Konto połączone. Wybierz narzędzie z biblioteki. Funkcje pokoju wymagają otwartej gry.':state.phase==='expired'?'Sesja MSP2 wygasła lub odświeżenie się nie powiodło. Zaloguj się ponownie.':'Zaloguj się, aby korzystać z panelu bez uruchamiania gry.';
   }
@@ -21,9 +21,9 @@
   dialog.addEventListener('cancel',()=>void cancel());
   form.addEventListener('submit',async event=>{
     event.preventDefault();if(pending)return;pending=true;submit.disabled=true;message.textContent='Łączenie z serwerem MSP2…';
-    const input={username:document.querySelector('#account-username').value,password:document.querySelector('#account-password').value,region:document.querySelector('#account-region').value};
+    const input={username:document.querySelector('#account-username').value,password:document.querySelector('#account-password').value,region:document.querySelector('#account-region').value,remember:document.querySelector('#account-remember').checked};
     document.querySelector('#account-password').value='';
-    try{const result=await command('account-login',input);if(result.ok){display(result);dialog.close();displayStatus({kind:'ready',text:'Konto MSP2 połączone · wybierz narzędzie'})}else message.textContent=errors[result.error]||errors.network}
+    try{const result=await command('account-login',input);if(result.ok){display(result);dialog.close();displayStatus({kind:'ready',text:result.profileSaveError?'Konto połączone, ale profilu nie udało się zapisać.':'Konto MSP2 połączone · wybierz narzędzie'})}else message.textContent=errors[result.error]||errors.network}
     finally{input.password='';pending=false;submit.disabled=false}
   });
   document.querySelector('#account-logout').addEventListener('click',async()=>display(await command('account-logout')));

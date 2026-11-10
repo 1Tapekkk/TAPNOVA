@@ -18,7 +18,7 @@ async function main(){
   try{const r=spawnSync(process.execPath,[wrangler,'d1','execute','DB','--remote','--file',transfer,'--config',config],{windowsHide:true,stdio:'pipe'});if(r.status!==0)throw Error('Cloudflare owner session operation failed. Check Wrangler login.')}finally{fs.rmSync(transfer,{force:true})}
  }
  try{
-  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+180000},'${secrets.ADMIN_VERIFIER}');`);
+  sql(`INSERT INTO admin_sessions(token_hash,expires,auth_version) VALUES('${hash}',${Date.now()+180000},'${secrets.ADMIN_VERIFIER}:'||(SELECT version FROM admin_security WHERE id=1));`);
   const origin='https://tapnova-licenses.tapnova-1tapekkk.workers.dev';
   const route=server?'server':memberRole?'member-role':welcome?(['welcome-preview','welcome-check'].includes(channel)?channel:'welcome'):(draft?'draft':'channel')+'?id='+channel;
   const payload=channel==='server-staff-order'?{action:'staff-order'}:channel==='server-role'?{action:'role',name:process.argv[3]}:channel==='server-community'?{action:'community'}:channel==='welcome-enable'?{enabled:true,channelId:process.argv[3]}:channel==='welcome-disable'?{enabled:false}:['welcome-preview','welcome-check','member-role-create'].includes(channel)?{}:undefined;

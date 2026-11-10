@@ -45,6 +45,7 @@ app.setName('TAPNOVA');
 // A separate profile avoids corrupting or exporting the legacy WebView2 profile.
 app.setPath('userData', smoke ? path.join(require('node:os').tmpdir(),'tapnova-test-'+process.pid) : path.join(app.getPath('appData'),'TAPNOVA'));
 const diagnostics = require('./diagnostics.cjs').createDiagnostics(path.join(app.getPath('userData'),'logs'));
+const profiles=require('./profiles.cjs').createProfiles(path.join(app.getPath('userData'),'profiles.json'));
 diagnostics.record('startup',{source:'main'});
 process.on('uncaughtExceptionMonitor',error=>diagnostics.record('main-error',{name:error?.name,source:'main'}));
 process.on('unhandledRejection',error=>diagnostics.record('unhandled-rejection',{name:error?.name,source:'main'}));
@@ -218,11 +219,18 @@ ipcMain.handle('tapnova:extension',extensionMessage);
 ipcMain.handle('tapnova:command',async(event,name,value)=>{
   if(event.sender!==win?.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==shellURL) throw Error('Untrusted caller');
   switch(name) {
+    case 'profiles-list': return profiles.list();
+    case 'profiles-remove': return profiles.remove(value);
+    case 'diagnostics-history': return JSON.parse(await diagnostics.report());
+    case 'tool-state': {
+      const active=license?.isActive(),signed=!!account.lease();
+      return {tools:Object.fromEntries(tabs.map(id=>{const room=['chatroom','spam'].includes(id),available=!!active&&(room?loaded:signed||loaded);return [id,{available,label:!active?'Wymaga licencji':room?(loaded?'Otwórz pokój w grze':'Wymaga gry'):signed?'Konto połączone':loaded?'Sprawdź sesję w grze':'Wymaga logowania',reason:!active?'Aktywuj licencję TAPNOVA.':room?'Uruchom grę, zaloguj się i wejdź do pokoju. Dostępność zależy od połączenia z pokojem.':signed?'Możesz otworzyć panel konta bez uruchamiania gry. Poszczególne działania mogą wymagać uprawnień konta.':'Zaloguj konto w TAPNOVA albo uruchom grę i zaloguj się w niej.'}]}))};
+    }
     case 'account-status': return account.snapshot();
     case 'account-login': {
       if(smoke||!license?.isActive())return {ok:false,error:'unavailable'};
       const result=await account.login(value);
-      if(result.ok){workspaceReady=false;showGame(false);loaded=false;await game.webContents.loadURL('about:blank')}
+      if(result.ok){if(value?.remember===true){try{await profiles.save(value)}catch{result.profileSaveError=true}}workspaceReady=false;showGame(false);loaded=false;await game.webContents.loadURL('about:blank')}
       return result;
     }
     case 'account-logout': account.logout();workspaceReady=false;if(game?.webContents.getURL()===WORKSPACE_URL){showGame(false);await game.webContents.loadURL('about:blank')}return account.snapshot();
@@ -275,7 +283,7 @@ ipcMain.handle('tapnova:command',async(event,name,value)=>{
     }
     case 'tab': {
       if(!tabs.includes(value)) return {ok:false};
-      if(account.lease()&&!loaded)return {ok:await openWorkspace(value)};
+      if(account.lease()&&!loaded&&!['chatroom','spam'].includes(value))return {ok:await openWorkspace(value)};
       await startGame();
       if(!loaded) return {ok:false};
       await game.webContents.executeJavaScript(`(()=>{window.__xbPlayAt=Date.now();window.__xbMountPanel?.();const p=window.__xbPanel;if(!p)return false;p.style.display='flex';p.querySelector('[data-tab-id="${value}"]')?.click();return true})()`);

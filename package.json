@@ -1,6 +1,6 @@
 {
   "name": "tapnova-desktop",
-  "version": "4.3.2",
+  "version": "4.4.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "description": "TAPNOVA — Twoja przestrzeń do gry. Windows & macOS.",
@@ -22,7 +22,8 @@
     "test:cloudflare": "node scripts/Check-Cloudflare.cjs && node scripts/Check-Discord.cjs",
     "discord:setup": "node scripts/Setup-Discord.cjs",
     "discord:register": "node scripts/Register-Discord.cjs",
-    "test:discord": "node scripts/Check-Discord.cjs"
+    "test:discord": "node scripts/Check-Discord.cjs",
+    "test:admin": "node scripts/Check-License-Admin.cjs && node scripts/Check-Admin-Tools.cjs && node scripts/Check-Cloudflare-Admin.cjs"
   },
   "devDependencies": {
     "@fontsource/inter": "5.3.0",
